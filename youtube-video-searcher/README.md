@@ -1,5 +1,12 @@
 # YouTube Video Searcher
 
+## Pacakages
+
+In terminal:
+```
+pip install yt-dlp youtube-transcript-api
+```
+
 ## One-Line CLI Commands (Scriptable)
 
 Find an exact dialog quote across 10 videos (even if split across subtitle lines):
