@@ -1,0 +1,2766 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notebook & Automation Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            studio: {
+              bg: '#0b0d13',
+              panel: '#11141d',
+              card: '#161a26',
+              hover: '#1d2232',
+              border: '#252b3d',
+              accent: '#38bdf8',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              violet: '#a855f7',
+              rose: '#f43f5e'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Custom Scrollbars & Developer Studio Aesthetics */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0d13;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #252b3d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
+
+    body {
+      background-color: #0b0d13;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .code-editor {
+      font-family: 'JetBrains Mono', monospace;
+      tab-size: 4;
+      line-height: 1.55;
+      caret-color: #38bdf8;
+    }
+
+    .cell-card {
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+    }
+    .cell-card:focus-within {
+      border-color: rgba(56, 189, 248, 0.55);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2), 0 12px 30px -10px rgba(0, 0, 0, 0.65);
+    }
+
+    /* Markdown Rendered Styles */
+    .md-prose h1 { font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.75rem; border-bottom: 1px solid #252b3d; padding-bottom: 0.4rem; }
+    .md-prose h2 { font-size: 1.2rem; font-weight: 600; color: #38bdf8; margin-top: 1rem; margin-bottom: 0.5rem; }
+    .md-prose h3 { font-size: 1.02rem; font-weight: 600; color: #cbd5e1; margin-top: 0.75rem; margin-bottom: 0.4rem; }
+    .md-prose p { color: #cbd5e1; line-height: 1.65; margin-bottom: 0.75rem; font-size: 0.925rem; }
+    .md-prose ul { list-style-type: disc; padding-left: 1.4rem; margin-bottom: 0.75rem; color: #cbd5e1; font-size: 0.925rem; }
+    .md-prose ol { list-style-type: decimal; padding-left: 1.4rem; margin-bottom: 0.75rem; color: #cbd5e1; font-size: 0.925rem; }
+    .md-prose li { margin-bottom: 0.28rem; }
+    .md-prose code { font-family: 'JetBrains Mono', monospace; background: #0b0d13; color: #38bdf8; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.82rem; border: 1px solid #252b3d; }
+    .md-prose pre { background: #0b0d13; padding: 0.85rem; border-radius: 0.5rem; overflow-x: auto; border: 1px solid #252b3d; margin-bottom: 0.75rem; }
+    .md-prose pre code { border: none; padding: 0; color: #e2e8f0; background: transparent; }
+    .md-prose blockquote { border-left: 3px solid #38bdf8; padding-left: 0.85rem; color: #94a3b8; font-style: italic; margin: 0.75rem 0; }
+    .md-prose table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }
+    .md-prose th, .md-prose td { border: 1px solid #252b3d; padding: 0.5rem 0.75rem; text-align: left; }
+    .md-prose th { background: #11141d; color: #f8fafc; font-weight: 600; }
+    .md-prose tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+    .md-prose a { color: #38bdf8; text-decoration: underline; text-underline-offset: 2px; }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .animate-status {
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col select-none md:select-auto overflow-hidden">
+
+  <!-- ================= TOP APPLICATION HEADER ================= -->
+  <header class="h-14 bg-studio-panel border-b border-studio-border px-3 sm:px-5 flex items-center justify-between shrink-0 z-30">
+    <!-- Left: Brand & Mobile Sidebar Button -->
+    <div class="flex items-center gap-3">
+      <button id="mobile-menu-btn" onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-studio-hover">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 via-indigo-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
+          <i class="fa-solid fa-terminal text-white text-sm"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm sm:text-base tracking-tight text-white">Automation Studio</span>
+            <span class="hidden sm:inline-block text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30">v2.4 Kernel</span>
+          </div>
+          <p class="hidden sm:block text-[11px] text-slate-400 leading-none">Interactive Polyglot Notebook & Script Runner</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Global Search Input -->
+    <div class="flex-1 max-w-md mx-3 sm:mx-6">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+        <input
+          id="global-search-input"
+          type="text"
+          placeholder="Search notebooks, scripts, SKUs, APIs, or tags... ( / )"
+          oninput="handleGlobalSearch(this.value)"
+          class="w-full bg-studio-bg border border-studio-border focus:border-sky-400 rounded-lg pl-8 pr-14 py-1.5 text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none transition"
+        />
+        <button
+          id="clear-search-btn"
+          onclick="clearGlobalSearch()"
+          class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 hover:text-white px-1.5 py-0.5 bg-studio-card rounded"
+        >
+          ESC
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Workspace Actions (Run All, Import, Export) -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <button
+        onclick="runAllExecutableCells()"
+        title="Execute all JS & Blueprint cells in active notebook"
+        class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition"
+      >
+        <i class="fa-solid fa-play text-[10px]"></i>
+        <span class="hidden sm:inline">Run All</span>
+      </button>
+
+      <button
+        onclick="openImportModal()"
+        title="Import .ipynb or .json Notebook"
+        class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-studio-card hover:bg-studio-hover text-slate-300 border border-studio-border text-xs font-medium transition"
+      >
+        <i class="fa-solid fa-file-import text-sky-400"></i>
+        <span class="hidden md:inline">Import</span>
+      </button>
+
+      <div class="relative" id="export-dropdown-wrapper">
+        <button
+          onclick="toggleExportMenu()"
+          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs transition shadow-sm"
+        >
+          <i class="fa-solid fa-download"></i>
+          <span class="hidden sm:inline">Export</span>
+          <i class="fa-solid fa-chevron-down text-[9px] ml-0.5"></i>
+        </button>
+        <!-- Export Dropdown Menu -->
+        <div
+          id="export-menu"
+          class="hidden absolute right-0 mt-2 w-60 rounded-xl bg-studio-panel border border-studio-border shadow-2xl py-1.5 z-50"
+        >
+          <div class="px-3 py-1.5 border-b border-studio-border text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            Export Active Notebook
+          </div>
+          <button onclick="exportCurrentNotebook('ipynb')" class="w-full px-3.5 py-2 text-left text-xs text-slate-200 hover:bg-studio-hover flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-book-open text-amber-400 w-4"></i> Jupyter Notebook (<code>.ipynb</code>)</span>
+            <span class="text-[10px] text-slate-500">v4 JSON</span>
+          </button>
+          <button onclick="exportCurrentNotebook('md')" class="w-full px-3.5 py-2 text-left text-xs text-slate-200 hover:bg-studio-hover flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-brands fa-markdown text-sky-400 w-4"></i> Markdown Briefing (<code>.md</code>)</span>
+            <span class="text-[10px] text-slate-500">Docs</span>
+          </button>
+          <button onclick="exportCurrentNotebook('json')" class="w-full px-3.5 py-2 text-left text-xs text-slate-200 hover:bg-studio-hover flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-code text-emerald-400 w-4"></i> Studio Backup (<code>.json</code>)</span>
+            <span class="text-[10px] text-slate-500">Full State</span>
+          </button>
+          <div class="border-t border-studio-border my-1"></div>
+          <button onclick="exportAllWorkspaceJSON()" class="w-full px-3.5 py-2 text-left text-xs text-violet-300 hover:bg-studio-hover flex items-center gap-2">
+            <i class="fa-solid fa-boxes-packing text-violet-400 w-4"></i> Export Entire Workspace (<code>.json</code>)
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN WORKSPACE BODY ================= -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- Mobile Backdrop -->
+    <div id="sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden lg:hidden"></div>
+
+    <!-- ================= LEFT SIDEBAR: NOTEBOOK EXPLORER ================= -->
+    <aside
+      id="sidebar"
+      class="w-72 sm:w-80 bg-studio-panel border-r border-studio-border flex flex-col shrink-0 fixed lg:static inset-y-0 left-0 z-30 -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out"
+    >
+      <!-- Sidebar Top Controls -->
+      <div class="p-3.5 border-b border-studio-border flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-folder-tree text-sky-400 text-xs"></i>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">Notebooks</span>
+          <span id="notebook-count-badge" class="text-[11px] font-mono px-1.5 py-0.2 bg-studio-card border border-studio-border rounded text-slate-400">4</span>
+        </div>
+        <button
+          onclick="createNewNotebook()"
+          class="flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/30 text-xs font-medium transition"
+        >
+          <i class="fa-solid fa-plus text-[10px]"></i>
+          <span>New</span>
+        </button>
+      </div>
+
+      <!-- Tag Quick Filter Bar -->
+      <div class="px-3.5 py-2.5 border-b border-studio-border bg-studio-bg/40">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1.5">Filter by Domain Tag</div>
+        <div id="tag-filter-container" class="flex flex-wrap gap-1"></div>
+      </div>
+
+      <!-- Notebook List -->
+      <div id="notebook-list" class="flex-1 overflow-y-auto p-2.5 space-y-1.5"></div>
+
+      <!-- Global Search Results Drawer (When searching) -->
+      <div id="search-results-panel" class="hidden flex-1 overflow-y-auto p-3 space-y-2 bg-studio-bg/90 border-t border-studio-border"></div>
+
+      <!-- Sidebar Footer: Storage & Reset -->
+      <div class="p-3 border-t border-studio-border bg-studio-bg/60 flex items-center justify-between text-[11px] text-slate-400">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-status"></span>
+          <span id="storage-status">Saved in LocalStorage</span>
+        </div>
+        <button
+          onclick="openResetConfirmModal()"
+          title="Restore default starter notebooks"
+          class="text-slate-400 hover:text-amber-400 transition flex items-center gap-1"
+        >
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Reset Defaults</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ================= RIGHT MAIN EDITOR CANVAS ================= -->
+    <main class="flex-1 flex flex-col bg-studio-bg overflow-hidden">
+      <!-- Active Notebook Subheader / Metadata Toolbar -->
+      <div class="bg-studio-panel/80 backdrop-blur border-b border-studio-border px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+          <button
+            onclick="promptRenameNotebook()"
+            title="Click to rename notebook"
+            class="group flex items-center gap-2 text-left min-w-0"
+          >
+            <h1 id="active-notebook-title" class="text-base sm:text-xl font-bold text-white truncate group-hover:text-sky-400 transition"></h1>
+            <i class="fa-solid fa-pen text-xs text-slate-500 group-hover:text-sky-400 transition shrink-0"></i>
+          </button>
+        </div>
+
+        <!-- Notebook Action Pills -->
+        <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
+          <div id="active-notebook-tags" class="hidden xl:flex items-center gap-1 mr-2"></div>
+
+          <button
+            onclick="addNewCell('markdown')"
+            class="px-2.5 py-1.5 rounded-lg bg-studio-card hover:bg-studio-hover border border-studio-border text-xs text-slate-200 flex items-center gap-1.5 transition"
+          >
+            <i class="fa-brands fa-markdown text-sky-400"></i>
+            <span>+ Markdown</span>
+          </button>
+
+          <button
+            onclick="addNewCell('js')"
+            class="px-2.5 py-1.5 rounded-lg bg-studio-card hover:bg-studio-hover border border-studio-border text-xs text-slate-200 flex items-center gap-1.5 transition"
+          >
+            <i class="fa-brands fa-square-js text-amber-400"></i>
+            <span>+ JS Sandbox</span>
+          </button>
+
+          <button
+            onclick="addNewCell('blueprint')"
+            class="px-2.5 py-1.5 rounded-lg bg-studio-card hover:bg-studio-hover border border-studio-border text-xs text-slate-200 flex items-center gap-1.5 transition"
+          >
+            <i class="fa-brands fa-python text-emerald-400"></i>
+            <span>+ Py / Userscript</span>
+          </button>
+
+          <div class="h-4 w-[1px] bg-studio-border mx-0.5 hidden sm:block"></div>
+
+          <button
+            onclick="duplicateCurrentNotebook()"
+            title="Duplicate Notebook"
+            class="p-1.5 rounded-lg bg-studio-card hover:bg-studio-hover border border-studio-border text-slate-400 hover:text-white text-xs transition"
+          >
+            <i class="fa-regular fa-clone"></i>
+          </button>
+          <button
+            onclick="requestDeleteCurrentNotebook()"
+            title="Delete Notebook"
+            class="p-1.5 rounded-lg bg-studio-card hover:bg-rose-500/20 border border-studio-border hover:border-rose-500/40 text-slate-400 hover:text-rose-400 text-xs transition"
+          >
+            <i class="fa-regular fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Notebook Cells Stream -->
+      <div id="notebook-canvas" class="flex-1 overflow-y-auto px-3 sm:px-8 py-6 space-y-5">
+        <!-- Populated dynamically by renderActiveNotebook() -->
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= CUSTOM MODALS & TOAST CONTAINER ================= -->
+
+  <!-- Rename / Edit Metadata Modal -->
+  <div id="rename-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-studio-panel border border-studio-border rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-sky-400"></i>
+          <span>Edit Notebook Metadata</span>
+        </h3>
+        <button onclick="closeRenameModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Notebook Title</label>
+          <input id="modal-nb-title" type="text" class="w-full bg-studio-bg border border-studio-border rounded-lg px-3 py-2 text-sm text-white focus:border-sky-400 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Subtitle / Description</label>
+          <input id="modal-nb-desc" type="text" class="w-full bg-studio-bg border border-studio-border rounded-lg px-3 py-2 text-sm text-white focus:border-sky-400 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Tags (comma-separated)</label>
+          <input id="modal-nb-tags" type="text" placeholder="python, arbitrage, greenops" class="w-full bg-studio-bg border border-studio-border rounded-lg px-3 py-2 text-sm text-white focus:border-sky-400 focus:outline-none" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="closeRenameModal()" class="px-3.5 py-1.5 rounded-lg bg-studio-card text-slate-300 text-xs hover:bg-studio-hover">Cancel</button>
+        <button onclick="saveNotebookMetadata()" class="px-4 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold text-xs hover:bg-sky-400">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Notebook Modal -->
+  <div id="import-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-studio-panel border border-studio-border rounded-2xl max-w-lg w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-file-import text-sky-400"></i>
+          <span>Import Notebook (.ipynb or .json)</span>
+        </h3>
+        <button onclick="closeImportModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">
+        Upload a standard Jupyter Notebook (<code>.ipynb</code>) or an Automation Studio backup file (<code>.json</code>), or paste raw JSON below.
+      </p>
+      <div class="space-y-3">
+        <label class="flex flex-col items-center justify-center border-2 border-dashed border-studio-border hover:border-sky-400 rounded-xl p-5 cursor-pointer bg-studio-bg/50 transition">
+          <i class="fa-solid fa-cloud-arrow-up text-2xl text-sky-400 mb-1.5"></i>
+          <span class="text-xs font-medium text-slate-200">Click to select a <code>.ipynb</code> or <code>.json</code> file</span>
+          <input id="import-file-input" type="file" accept=".ipynb,.json,application/json" onchange="handleImportFileUpload(event)" class="hidden" />
+        </label>
+        <div>
+          <label class="block text-[11px] font-medium text-slate-400 mb-1">Or paste raw JSON content:</label>
+          <textarea
+            id="import-json-textarea"
+            rows="5"
+            placeholder='{"cells": [...], "metadata": {...}}'
+            class="w-full bg-studio-bg border border-studio-border rounded-lg p-2.5 text-xs font-mono text-slate-200 focus:border-sky-400 focus:outline-none"
+          ></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button onclick="closeImportModal()" class="px-3.5 py-1.5 rounded-lg bg-studio-card text-slate-300 text-xs hover:bg-studio-hover">Cancel</button>
+        <button onclick="importFromTextarea()" class="px-4 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold text-xs hover:bg-sky-400">Import Pasted JSON</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal (Delete / Reset) -->
+  <div id="confirm-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-studio-panel border border-studio-border rounded-2xl max-w-sm w-full p-5 shadow-2xl">
+      <h3 id="confirm-modal-title" class="text-base font-bold text-white mb-2">Confirm Action</h3>
+      <p id="confirm-modal-desc" class="text-xs text-slate-400 mb-5 leading-relaxed"></p>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeConfirmModal()" class="px-3.5 py-1.5 rounded-lg bg-studio-card text-slate-300 text-xs hover:bg-studio-hover">Cancel</button>
+        <button id="confirm-modal-action-btn" class="px-4 py-1.5 rounded-lg bg-rose-500 text-white font-semibold text-xs hover:bg-rose-400">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Stack -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ================= APPLICATION JAVASCRIPT ================= -->
+  <script>
+    const STORAGE_KEY = 'automation_studio_notebooks_v2';
+
+    // ============================================================================
+    // 1. PRE-LOADED STARTER NOTEBOOKS (FROM USER'S AUTOMATION SCRIPTS WORKSPACE)
+    // ============================================================================
+    function getStarterNotebooks() {
+      return [
+        // ------------------------------------------------------------------------
+        // NOTEBOOK 1: GLOBAL & TECH PULSE RADAR
+        // ------------------------------------------------------------------------
+        {
+          id: 'nb-tech-pulse',
+          title: '🌍 Global & Tech Pulse Radar',
+          description: 'Automated daily intelligence across Hacker News, GitHub Breakthroughs & arXiv Frontier Science.',
+          updatedAt: '2026-11-16 08:24',
+          tags: ['python', 'arxiv', 'github', 'hacker-news', 'intelligence'],
+          cells: [
+            {
+              id: 'cell-tp-1',
+              type: 'markdown',
+              mode: 'preview',
+              title: 'Architecture Overview: Global & Tech Pulse',
+              content: `# 🌍 Global & Technology Pulse Briefing Architecture
+
+This notebook automates live technology horizon scanning across three foundational pillars of global software and scientific research:
+* **📰 Global Tech & Industry Headlines (Hacker News API):** Queries \`https://hacker-news.firebaseio.com/v0/topstories.json\` for high-velocity engineering discussions.
+* **🚀 Open-Source Software Breakthroughs (GitHub Search API):** Identifies fast-growing repositories created in the last 7 days sorted by star velocity.
+* **🧠 Frontier Research & Science (arXiv Atom Feed):** Streams the latest preprints across **Artificial Intelligence (\`cs.AI\`)**, **Robotics (\`cs.RO\`)**, and **Quantum Physics (\`quant-ph\`)**.
+
+> **Tip:** Use the interactive **Live Tech Pulse Radar Widget** below to fetch live Hacker News stories right in your browser or simulate a full 3-pillar synthesis briefing.`
+            },
+            {
+              id: 'cell-tp-widget',
+              type: 'widget',
+              widgetType: 'tech-pulse-radar',
+              title: 'Interactive Live API Runner: Global & Tech Pulse Radar'
+            },
+            {
+              id: 'cell-tp-2',
+              type: 'blueprint',
+              filename: 'tech_pulse.py',
+              language: 'python',
+              title: 'Zero-Dependency Python Collector & Markdown Compiler',
+              code: `#!/usr/bin/env python3
+"""
+Global & Tech Pulse Automation Script (tech_pulse.py)
+Fetches live breakthroughs from Hacker News, GitHub, and arXiv,
+and compiles an automated daily intelligence report in Markdown.
+"""
+
+import urllib.request
+import urllib.parse
+import json
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta, timezone
+
+def fetch_hacker_news_top(limit=5):
+    """Fetches top global tech and world stories from Hacker News API."""
+    base_url = "https://hacker-news.firebaseio.com/v0"
+    try:
+        with urllib.request.urlopen(f"{base_url}/topstories.json", timeout=10) as res:
+            story_ids = json.loads(res.read().decode())[:limit]
+        stories = []
+        for sid in story_ids:
+            with urllib.request.urlopen(f"{base_url}/item/{sid}.json", timeout=10) as res:
+                item = json.loads(res.read().decode())
+                if item:
+                    stories.append({
+                        "title": item.get("title", "Untitled"),
+                        "url": item.get("url", f"https://news.ycombinator.com/item?id={sid}"),
+                        "score": item.get("score", 0)
+                    })
+        return stories
+    except Exception as e:
+        return [{"title": f"Error fetching Hacker News: {e}", "url": "#", "score": 0}]
+
+def fetch_github_breakthroughs(limit=5):
+    """Fetches fast-growing repositories created in the last 7 days via GitHub API."""
+    seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+    query = urllib.parse.quote(f"created:>{seven_days_ago}")
+    url = f"https://api.github.com/search/repositories?q={query}&sort=stars&order=desc&per_page={limit}"
+    req = urllib.request.Request(url, headers={"User-Agent": "TechPulseAutomation/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json.loads(res.read().decode())
+            return [{
+                "name": item.get("full_name"),
+                "description": item.get("description") or "No description provided.",
+                "stars": item.get("stargazers_count", 0),
+                "language": item.get("language") or "Multi-language",
+                "url": item.get("html_url")
+            } for item in data.get("items", [])]
+    except Exception as e:
+        return [{"name": "Error", "description": str(e), "stars": 0, "language": "N/A", "url": "#"}]
+
+def fetch_arxiv_frontiers(limit=5):
+    """Fetches the latest papers in AI, Robotics, and Quantum/Systems from arXiv."""
+    query = "cat:cs.AI+OR+cat:cs.RO+OR+cat:quant-ph"
+    url = f"http://export.arxiv.org/api/query?search_query={query}&sortBy=submittedDate&sortOrder=descending&max_results={limit}"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as res:
+            root = ET.fromstring(res.read())
+        ns = {"atom": "http://www.w3.org/2005/Atom"}
+        papers = []
+        for entry in root.findall("atom:entry", ns):
+            title = entry.find("atom:title", ns).text.strip().replace("\\n", " ")
+            summary = entry.find("atom:summary", ns).text.strip().replace("\\n", " ")
+            link = entry.find("atom:id", ns).text.strip()
+            papers.append({
+                "title": title,
+                "summary": summary[:220] + "..." if len(summary) > 220 else summary,
+                "url": link
+            })
+        return papers
+    except Exception as e:
+        return [{"title": f"Error fetching arXiv: {e}", "summary": "", "url": "#"}]
+
+if __name__ == "__main__":
+    print("Scanning global feeds and technology repositories...")
+    hn = fetch_hacker_news_top(5)
+    gh = fetch_github_breakthroughs(5)
+    ax = fetch_arxiv_frontiers(5)
+    print(f"✅ Briefing compiled: {len(hn)} HN stories, {len(gh)} GitHub repos, {len(ax)} arXiv preprints.")`,
+              simulatedOutput: `$ python3 tech_pulse.py
+Scanning global feeds and technology repositories...
+[+] Connected to hacker-news.firebaseio.com/v0/topstories.json (200 OK)
+[+] Connected to api.github.com/search/repositories (200 OK)
+[+] Connected to export.arxiv.org/api/query (200 OK)
+
+# 🌍 Global & Technology Pulse Briefing (2026-11-16 08:25 UTC)
+
+## 🚀 Trending Open-Source Technologies (GitHub)
+- [tensor-forge/micro-vllm-edge](https://github.com/tensor-forge/micro-vllm-edge) (Rust | ⭐ 3,420): Zero-copy 4-bit speculative decoding engine for consumer ARM & RISC-V NPUs.
+- [greencloud-io/watts-scheduler](https://github.com/greencloud-io/watts-scheduler) (Go | ⭐ 1,985): Carbon-intensity aware Kubernetes pod dispatcher with Open-Meteo telemetry.
+- [autobot-labs/steam-ws-firehose](https://github.com/autobot-labs/steam-ws-firehose) (Python | ⭐ 1,140): High-throughput WAL SQLite indexer for real-time game economy WebSockets.
+
+## 🧠 Frontier Research & Science (arXiv)
+- [Sub-Quadratic State Space World Models for Dexterous Bipedal Manipulation](http://arxiv.org/abs/2611.08412v1)
+  We present a hybrid Mamba-Transformer sensorimotor policy capable of zero-shot tool synthesis...
+- [Fault-Tolerant Logical Qubit Routing via Topological Lattice Surgery](http://arxiv.org/abs/2611.08399v1)
+  Demonstrating a 41% reduction in syndrome extraction overhead across modular superconducting arrays...
+
+✅ Briefing saved to tech_pulse_20261116.md`
+            },
+            {
+              id: 'cell-tp-3',
+              type: 'js',
+              title: 'Agentic Trend Synthesizer & Discord Webhook Formatter (JS Sandbox)',
+              code: `// Run this cell (Shift+Enter) to synthesize cross-domain signals into a Discord Webhook payload
+const pulseSignals = [
+  { pillar: "GitHub", item: "tensor-forge/micro-vllm-edge", metric: "3,420 ⭐", theme: "Edge Quantization" },
+  { pillar: "GitHub", item: "greencloud-io/watts-scheduler", metric: "1,985 ⭐", theme: "Carbon-Aware Compute" },
+  { pillar: "arXiv", item: "Sub-Quadratic State Space World Models", metric: "cs.RO", theme: "Embodied Robotics" },
+  { pillar: "HackerNews", item: "SQLite WAL Mode hits 450k concurrent reads/sec on NVMe", metric: "842 pts", theme: "Local-First Indexing" }
+];
+
+console.table(pulseSignals);
+
+const webhookPayload = {
+  username: "Global Tech Pulse Bot",
+  embeds: [{
+    title: "🌍 Daily Cross-Industry Synthesis",
+    color: 3718648,
+    fields: pulseSignals.map(s => ({
+      name: \`[\${s.pillar}] \${s.theme}\`,
+      value: \`\${s.item} (\${s.metric})\`,
+      inline: true
+    }))
+  }]
+};
+
+console.log("Generated Webhook Payload:", JSON.stringify(webhookPayload, null, 2));
+return \`Ready to POST (\${JSON.stringify(webhookPayload).length} bytes)\`;`
+            }
+          ]
+        },
+
+        // ------------------------------------------------------------------------
+        // NOTEBOOK 2: GREENOPS & CARBON-AWARE COMPUTE
+        // ------------------------------------------------------------------------
+        {
+          id: 'nb-greenops',
+          title: '🌱 GreenOps & Carbon-Aware Compute',
+          description: 'Multi-region clean-grid workload router (grid_router.py) & SLA-safe carbon cron scheduler (carbon_cron.py).',
+          updatedAt: '2026-11-16 08:27',
+          tags: ['greenops', 'python', 'open-meteo', 'ai-routing', 'cron'],
+          cells: [
+            {
+              id: 'cell-go-1',
+              type: 'markdown',
+              mode: 'preview',
+              title: 'GreenOps Engineering Mechanisms',
+              content: `# 🌱 Carbon-Aware Compute & Green AI Operations (GreenOps)
+
+Most engineering teams trigger heavy batch jobs—LLM fine-tuning, nightly ETL pipelines, CI test suites, and backups—on rigid wall-clock schedules (\`0 0 * * *\`) regardless of whether the regional electrical grid is running on peak solar/wind or coal/gas peaker plants.
+
+### Three Core Automation Pillars
+1. **Location Shifting (\`grid_router.py\`):** Polls real-time solar irradiance (\`W/m²\`) and 10m wind speed (\`km/h\`) across global cloud regions via the zero-auth **Open-Meteo API** and routes compute to the cleanest zone.
+2. **Demand Shaping (Green AI Routing):** Dynamically scales AI inference parameters—routing to \`frontier-fp16\` when clean energy score $\\ge 55$, \`mid-tier-int8\` when moderate, and \`small-distilled-int4\` with aggressive prompt caching when the grid is dirty.
+3. **Time Shifting (\`carbon_cron.py\`):** Wraps any CLI batch command with an SLA window (e.g., \`--window-hours 6\`) and shifts execution to the lowest carbon-intensity slot.`
+            },
+            {
+              id: 'cell-go-widget',
+              type: 'widget',
+              widgetType: 'greenops-calculator',
+              title: 'Interactive Simulator: Renewable Score & AI Demand Shaper'
+            },
+            {
+              id: 'cell-go-2',
+              type: 'blueprint',
+              filename: 'grid_router.py',
+              language: 'python',
+              title: 'Script 1: Multi-Region Clean-Grid Router & AI Demand Shaper',
+              code: `#!/usr/bin/env python3
+"""
+grid_router.py — Multi-Region Clean-Grid Router & AI Demand Shaper
+Polls live solar radiation and wind telemetry across global cloud regions
+using the free Open-Meteo API (no API key required) to automate:
+  1. Location Shifting (selects the cleanest cloud region right now)
+  2. Demand Shaping (sets AI model quantization/batching tiers based on grid cleanliness)
+"""
+
+import json
+import urllib.request
+import urllib.parse
+from datetime import datetime, timezone
+
+CLOUD_REGIONS = {
+    "us-west-oregon":       {"lat": 45.84, "lon": -119.70, "provider_zone": "us-west-2"},
+    "eu-central-frankfurt": {"lat": 50.11, "lon": 8.68,    "provider_zone": "eu-central-1"},
+    "eu-north-stockholm":   {"lat": 59.33, "lon": 18.06,   "provider_zone": "eu-north-1"},
+    "ap-southeast-kl":      {"lat": 3.14,  "lon": 101.69,  "provider_zone": "ap-southeast-5"},
+    "ap-northeast-tokyo":   {"lat": 35.68, "lon": 139.77,  "provider_zone": "ap-northeast-1"},
+}
+
+def fetch_region_renewables(lat: float, lon: float) -> dict:
+    params = urllib.parse.urlencode({
+        "latitude": lat,
+        "longitude": lon,
+        "current": "shortwave_radiation,wind_speed_10m,cloud_cover",
+        "timezone": "UTC"
+    })
+    url = f"https://api.open-meteo.com/v1/forecast?{params}"
+    req = urllib.request.Request(url, headers={"User-Agent": "GreenOpsRouter/1.0"})
+    with urllib.request.urlopen(req, timeout=8) as res:
+        current = json.loads(res.read().decode("utf-8")).get("current", {})
+        solar_wm2 = float(current.get("shortwave_radiation", 0.0))
+        wind_kmh = float(current.get("wind_speed_10m", 0.0))
+        solar_norm = min(solar_wm2 / 800.0, 1.0) * 100.0
+        wind_norm = min(wind_kmh / 50.0, 1.0) * 100.0
+        renewable_score = round((0.55 * solar_norm) + (0.45 * wind_norm), 1)
+        return {"solar_wm2": solar_wm2, "wind_kmh": wind_kmh, "renewable_score": renewable_score}
+
+def determine_ai_demand_profile(score: float) -> dict:
+    if score >= 55.0:
+        return {"mode": "HIGH_CAPACITY_CLEAN", "llm_routing": "frontier-fp16", "quantization": "none", "batch_size": 1, "prompt_cache_ttl_sec": 300}
+    elif score >= 25.0:
+        return {"mode": "BALANCED_MODERATE", "llm_routing": "mid-tier-int8", "quantization": "8-bit", "batch_size": 8, "prompt_cache_ttl_sec": 1800}
+    else:
+        return {"mode": "ECO_SHAPED_DIRTY_GRID", "llm_routing": "small-distilled-int4", "quantization": "4-bit", "batch_size": 32, "prompt_cache_ttl_sec": 7200}`,
+              simulatedOutput: `$ python3 grid_router.py
+Scanning global cloud regions for live renewable energy availability...
+
+  [1] ap-southeast-kl      (ap-southeast-5) | Score: 64.2/100 (Solar: 610 W/m², Wind: 24.8 km/h)
+  [2] eu-north-stockholm   (eu-north-1)     | Score: 58.5/100 (Solar: 310 W/m², Wind: 41.3 km/h)
+  [3] eu-central-frankfurt (eu-central-1)   | Score: 42.1/100 (Solar: 280 W/m², Wind: 25.4 km/h)
+  [4] ap-northeast-tokyo   (ap-northeast-1) | Score: 31.0/100 (Solar: 120 W/m², Wind: 25.3 km/h)
+  [5] us-west-oregon       (us-west-2)      | Score: 19.8/100 (Solar:   0 W/m², Wind: 22.0 km/h)
+
+✅ Optimal Region Selected : ap-southeast-kl (ap-southeast-5)
+⚡ Renewable Score         : 64.2 / 100 (Solar: 610.0 W/m², Wind: 24.8 km/h)
+🧠 AI Demand Profile       : HIGH_CAPACITY_CLEAN [Model: frontier-fp16, Quant: none]
+
+Full dispatch configuration written to greenops_dispatch.json`
+            },
+            {
+              id: 'cell-go-3',
+              type: 'blueprint',
+              filename: 'carbon_cron.py',
+              language: 'python',
+              title: 'Script 2: SLA-Safe Carbon-Aware Cron Wrapper',
+              code: `#!/usr/bin/env python3
+"""
+carbon_cron.py — SLA-Safe Carbon-Aware Task Scheduler
+Forecasts hourly clean energy windows within an allowed SLA deadline
+and delays deferrable batch jobs until the grid is cleanest.
+
+Usage Example:
+  python3 carbon_cron.py --lat 3.14 --lon 101.69 --window-hours 6 --cmd "python3 train_model.py"
+  python3 carbon_cron.py --uk-grid --window-hours 4 --cmd "./run_nightly_etl.sh"
+"""
+
+import argparse, json, subprocess, time, urllib.request, urllib.parse
+from datetime import datetime, timezone
+
+def get_uk_grid_best_offset(window_hours: int) -> tuple[int, str]:
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    url = f"https://api.carbonintensity.org.uk/intensity/{now_iso}/fw24h"
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=8) as res:
+        slots = json.loads(res.read().decode("utf-8")).get("data", [])
+        window_slots = slots[:max(1, window_hours * 2)]
+        best_idx, best_slot = min(enumerate(window_slots), key=lambda item: item[1]["intensity"].get("forecast", 999))
+        return best_idx * 1800, f"{best_slot['intensity'].get('forecast')} gCO2/kWh at {best_slot.get('from')}"`,
+              simulatedOutput: `$ python3 carbon_cron.py --lat 3.14 --lon 101.69 --window-hours 6 --dry-run --cmd "python3 train_model.py"
+[CarbonCron] Polling Open-Meteo 48h solar & wind forecast for (3.14, 101.69)...
+[CarbonCron] SLA Window: 6h | Optimal Slot: Renewable Index 71.4/100 at 2026-11-16T11:00 UTC
+[CarbonCron] Dry-run enabled. Would delay execution by 120 minutes (saving ~38% grid carbon intensity).
+[CarbonCron] Launching workload: python3 train_model.py`
+            }
+          ]
+        },
+
+        // ------------------------------------------------------------------------
+        // NOTEBOOK 3: TF2 CROSS-MARKET ARBITRAGE HUB
+        // ------------------------------------------------------------------------
+        {
+          id: 'nb-tf2-hub',
+          title: '🎒 TF2 Cross-Market Arbitrage Hub',
+          description: 'End-to-end automation for Backpack.tf WebSockets, Marketplace.tf Cash-to-Key bridges, and Scrap.tf Modifier Scanners.',
+          updatedAt: '2026-11-16 08:46',
+          tags: ['tf2', 'backpack.tf', 'marketplace.tf', 'scrap.tf', 'userscript', 'arbitrage'],
+          cells: [
+            {
+              id: 'cell-tf2-1',
+              type: 'markdown',
+              mode: 'preview',
+              title: '3-Platform Arbitrage Pipeline Architecture',
+              content: `# 🎒 Team Fortress 2 Cross-Market Automation Architecture
+
+This notebook consolidates **14 automation scripts** across the three primary pillars of the TF2 trading ecosystem:
+
+| Platform | Primary Role | Key Endpoints & Automation Scripts |
+| :--- | :--- | :--- |
+| **Scrap.tf** | **Metal & Modifier Liquidity** | \`scraptf_modifier_scanner.user.js\` (Spells/Parts/Paints HUD), \`scraptf_smart_weapons.js\` (2:1 Weapon Scrubber), \`scraptf_bptf_bridge.py\` |
+| **Backpack.tf** | **Real-Time Order Book & Sniping** | \`wss://ws.backpack.tf/events\` (\`bptf_ws_sniper.py\` & SQLite \`bptf_market_indexer.py\`), \`/api/classifieds/listings/snapshot\` (\`bptf_spread_scanner.py\`), \`/api/v2/classifieds/listings/batch\` |
+| **Marketplace.tf** | **USD Cash Arbitrage & Auditing** | \`Deals/GetDeals/v2\` (\`mptf_bptf_arbitrage_bridge.py\`), \`Seller/GetSales/v2\` (\`mptf_seller_suite.py\`), \`mptf_listing_inspector.user.js\` |`
+            },
+            {
+              id: 'cell-tf2-widget',
+              type: 'widget',
+              widgetType: 'tf2-arbitrage-calc',
+              title: 'Interactive Calculator: Key/Ref/USD Cross-Market Arbitrage & SCM 15% Break-Even'
+            },
+            {
+              id: 'cell-tf2-2',
+              type: 'blueprint',
+              filename: 'bptf_ws_sniper.py',
+              language: 'python',
+              title: 'Backpack.tf Real-Time WebSocket Deal Sniper (Instance Valuation vs Asking Price)',
+              code: `#!/usr/bin/env python3
+"""
+bptf_ws_sniper.py — Real-Time Backpack.tf WebSocket Deal & Instance Sniper
+Connects to wss://ws.backpack.tf/events, evaluates 'listing-update' events
+against instance-aware 'suggested' valuations (Strange Parts, Spells, Killstreaks),
+and alerts on underpriced deals.
+"""
+
+import asyncio, json, urllib.request
+from datetime import datetime, timezone
+import websockets
+
+WS_URL = "wss://ws.backpack.tf/events"
+MIN_DISCOUNT_PCT = 15.0        # Alert when listing is >= 15% below suggested value
+MIN_ITEM_VALUE_METAL = 20.0    # Ignore penny items below 20 Refined Metal equivalent
+
+def extract_float(val_dict: dict, key: str = "raw") -> float:
+    if not isinstance(val_dict, dict):
+        return 0.0
+    try:
+        return float(val_dict.get(key) or val_dict.get("value") or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+def analyze_listing_event(event_obj: dict):
+    if event_obj.get("event") != "listing-update":
+        return
+    payload = event_obj.get("payload", {})
+    if payload.get("appid") != 440 or payload.get("intent") != "sell":
+        return
+
+    item = payload.get("item", {})
+    asking_raw = extract_float(payload.get("value", {}), "raw")
+    asking_short = payload.get("value", {}).get("short", f"{asking_raw:.2f} ref")
+
+    prices = item.get("price", {})
+    community_raw = extract_float(prices.get("community", {}), "raw")
+    suggested_raw = extract_float(prices.get("suggested", {}), "raw")
+
+    reference_raw = suggested_raw if suggested_raw > 0 else community_raw
+    if reference_raw < MIN_ITEM_VALUE_METAL or asking_raw <= 0:
+        return
+
+    discount_pct = ((reference_raw - asking_raw) / reference_raw) * 100.0
+    if discount_pct >= MIN_DISCOUNT_PCT:
+        print(f"🎯 DEAL DETECTED ({discount_pct:.1f}% OFF): {item.get('name')} @ {asking_short} (Suggested: {reference_raw:.2f} ref)")`,
+              simulatedOutput: `$ python3 bptf_ws_sniper.py
+[*] Connecting to wss://ws.backpack.tf/events ...
+[+] Connected! Streaming live backpack.tf classified events (max_size=16MB)...
+
+🎯 [08:42:11 UTC] DEAL DETECTED (24.6% OFF)
+  Item      : Strange Specialized Killstreak Rocket Launcher ( w/ KritzkriegOrAssist + Dominations )
+  Asking    : 1 key, 22.44 ref (~90.44 ref)
+  Suggested : 120.00 ref (Base Community: 78.55 ref)
+  Seller    : 76561198045802942 | Automatic Bot: True
+  Link      : https://backpack.tf/classifieds?id=440_14982104921
+
+🎯 [08:42:39 UTC] DEAL DETECTED (18.9% OFF)
+  Item      : Exquisite Rack (Painted: A Distinctive Lack of Hue)
+  Asking    : 48.66 ref (~48.66 ref)
+  Suggested : 60.00 ref (Base Community: 32.33 ref)
+  Seller    : 76561198091244110 | Automatic Bot: True`
+            },
+            {
+              id: 'cell-tf2-3',
+              type: 'blueprint',
+              filename: 'mptf_bptf_arbitrage_bridge.py',
+              language: 'python',
+              title: 'Cross-Market Cash-to-Key Arbitrage Bridge (Marketplace.tf USD -> Backpack.tf Bot Buy Orders)',
+              code: `#!/usr/bin/env python3
+"""
+mptf_bptf_arbitrage_bridge.py — Marketplace.tf (USD) -> Backpack.tf (Keys/Ref) Bridge
+Finds items on Marketplace.tf whose USD price converts into a higher Refined Metal / Key
+payout on Backpack.tf instant buy orders than buying Mann Co. Keys directly for cash.
+"""
+
+import argparse, json, os, time, urllib.parse, urllib.request
+
+MPTF_DEALS_URL = "https://marketplace.tf/api/Deals/GetDeals/v2"
+BPTF_SNAPSHOT_URL = "https://backpack.tf/api/classifieds/listings/snapshot"
+
+def compute_effective_key_rate(mptf_usd: float, bptf_buy_ref: float, key_usd: float = 1.72, key_ref: float = 68.0):
+    direct_ref_equiv = (mptf_usd / key_usd) * key_ref
+    keys_yielded = bptf_buy_ref / key_ref
+    effective_usd_per_key = mptf_usd / keys_yielded if keys_yielded > 0 else 999.0
+    spread_ref = bptf_buy_ref - direct_ref_equiv
+    return {
+        "direct_ref": round(direct_ref_equiv, 2),
+        "effective_usd_per_key": round(effective_usd_per_key, 2),
+        "spread_ref": round(spread_ref, 2)
+    }`,
+              simulatedOutput: `$ python3 mptf_bptf_arbitrage_bridge.py --key-usd 1.72 --key-ref 68.0 --limit 6
+[*] Fetching candidate deals from Marketplace.tf...
+
+Item Name                          |  MPTF USD | Direct Ref |   BPTF Buy | Eff. $/Key | Verdict
+------------------------------------------------------------------------------------------------
+Tour of Duty Ticket                |     $0.79 |   31.2 ref |   33.8 ref |  $1.59/key | 🔥 +2.6 ref
+Strange Australium Medi Gun        |    $58.50 | 2312.8 ref | 2516.0 ref |  $1.58/key | 🔥 +203.2 ref
+Earbuds                            |     $8.90 |  351.9 ref |  374.0 ref |  $1.62/key | 🔥 +22.1 ref
+Taunt: The Schadenfreude           |     $5.40 |  213.5 ref |  224.4 ref |  $1.64/key | 🔥 +10.9 ref
+Vintage Lugermorph                 |     $7.25 |  286.6 ref |  272.0 ref |  $1.81/key | -14.6 ref`
+            },
+            {
+              id: 'cell-tf2-4',
+              type: 'blueprint',
+              filename: 'scraptf_modifier_scanner.user.js',
+              language: 'javascript',
+              title: 'Tampermonkey Userscript: Scrap.tf & Backpack.tf Spell, Strange Part & Paint Scanner',
+              code: `// ==UserScript==
+// @name         Scrap.tf & BPTF Hidden Modifier Scanner (Paints, Spells, Parts, Craft #)
+// @namespace    https://scrap.tf/
+// @version      1.1.0
+// @description  Scans bot inventories for Painted items, Strange Parts, Spells, Sheen/Killstreakers, and Low Craft Numbers (#1-#100).
+// @match        https://scrap.tf/buy/*
+// @match        https://backpack.tf/classifieds*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    'use strict';
+    const HIGH_VALUE_PAINTS = [
+        "A Distinctive Lack of Hue",           // Black
+        "An Extraordinary Abundance of Tinge", // White
+        "Pink as Hell",
+        "The Bitter Taste of Defeat and Lime"
+    ];
+
+    const MODIFIER_RULES = [
+        { label: "🎃 SPELLED", color: "#ff00ff", test: (t) => /Halloween:|Spell:|Exorcism|Voices From Below|Pumpkin Bombs|Halloween Fire/i.test(t) },
+        { label: "🎨 TOP PAINT", color: "#00ffcc", test: (t) => HIGH_VALUE_PAINTS.some(p => t.toLowerCase().includes(p.toLowerCase())) },
+        { label: "🔧 STRANGE PART", color: "#ff9900", test: (t) => /Strange Part:|(Kills|Assists|Headshot|Domination|Airborne|Crit|Damage Dealt)/i.test(t) },
+        { label: "🏆 LOW CRAFT #", color: "#ffff00", test: (t) => { const m = t.match(/#(\\d+)\\b/); return m && parseInt(m[1], 10) <= 100; } }
+    ];
+    console.log("[Modifier Scanner] Loaded", MODIFIER_RULES.length, "active detection rules.");
+})();`,
+              simulatedOutput: `[Tampermonkey Runtime] Injected scraptf_modifier_scanner.user.js on https://scrap.tf/buy/hats
+[*] Scanned 1,420 bot inventory slots across 6 Scrap.tf bots in 38ms.
+[+] Highlighted 7 modified items at base bot price:
+  • 🎃 SPELLED     : Vintage Tyrolean (Halloween: Exorcism + Voices From Below) -> Bot #3
+  • 🎨 TOP PAINT   : Anger (Painted: A Distinctive Lack of Hue) -> Bot #1
+  • 🔧 STRANGE PART: Strange Scattergun (Domination Kills: 0, Airborne Enemy Kills: 0) -> Bot #4
+  • 🏆 LOW CRAFT # : Sight for Sore Eyes (#42) -> Bot #2`
+            }
+          ]
+        },
+
+        // ------------------------------------------------------------------------
+        // NOTEBOOK 4: SCRATCHPAD & CUSTOM NOTES
+        // ------------------------------------------------------------------------
+        {
+          id: 'nb-scratchpad',
+          title: '📓 Scratchpad & Custom Notes',
+          description: 'Interactive sandbox for custom JavaScript experiments, quick calculations, and new Python blueprints.',
+          updatedAt: '2026-11-16 09:00',
+          tags: ['sandbox', 'javascript', 'notes', 'custom'],
+          cells: [
+            {
+              id: 'cell-sp-1',
+              type: 'markdown',
+              mode: 'preview',
+              title: 'Quick Reference & Keyboard Shortcuts',
+              content: `# 📓 Scratchpad & Polyglot Prototyping
+
+Use this notebook to prototype new automation workflows, test JSON transformations in JavaScript, or draft Python/Tampermonkey scripts.
+
+### Studio Capabilities
+* **Markdown Cells:** Click **Edit / Preview** (or double-click any rendered note) to write documentation with tables, code blocks, and lists.
+* **JavaScript Sandbox Cells:** Press **Run Cell** (or \`Shift + Enter\` inside the editor) to execute code directly in the browser. Both \`console.log\`, \`console.table\`, and return values are captured with sub-millisecond timing.
+* **Export Anywhere:** Click **Export** in the top-right bar to download this notebook as a genuine **Jupyter Notebook (\`.ipynb\`)**, **Markdown (\`.md\`)**, or **JSON Backup**.`
+            },
+            {
+              id: 'cell-sp-2',
+              type: 'js',
+              title: 'Scrap.tf Weapon Banking & Metal Denominations Calculator (Live JS)',
+              code: `// Calculate Pure Metal yield from duplicate TF2 weapons (2 weapons = 1 scrap, 9 scrap = 1 ref)
+function auditWeaponBanking(totalDuplicateWeapons, keepCopiesRemoved = true) {
+  const usableWeapons = totalDuplicateWeapons - (totalDuplicateWeapons % 2);
+  const leftoverWeapons = totalDuplicateWeapons % 2;
+  const totalScrap = usableWeapons / 2;
+
+  const refined = Math.floor(totalScrap / 9);
+  const reclaimed = Math.floor((totalScrap % 9) / 3);
+  const scrap = totalScrap % 3;
+  const decimalRef = Number((refined + (totalScrap % 9) * 0.11).toFixed(2));
+
+  return {
+    inputWeapons: totalDuplicateWeapons,
+    tradedWeapons: usableWeapons,
+    leftoverWeapon: leftoverWeapons,
+    payout: \`\${refined} Ref, \${reclaimed} Rec, \${scrap} Scrap\`,
+    decimalRef
+  };
+}
+
+const sampleBackpacks = [47, 128, 315].map(w => auditWeaponBanking(w));
+console.table(sampleBackpacks);
+return \`315 duplicate weapons yield \${sampleBackpacks[2].payout} (\${sampleBackpacks[2].decimalRef} ref)\`;`
+            }
+          ]
+        }
+      ];
+    }
+
+    // ============================================================================
+    // 2. APPLICATION STATE & STORAGE INITIALIZATION
+    // ============================================================================
+    let notebooks = [];
+    let activeNotebookId = null;
+    let activeTagFilter = 'ALL';
+    let globalSearchQuery = '';
+    let cellOutputs = {}; // { [cellId]: { logs: [], tables: [], returnVal: null, error: null, durationMs: 0 } }
+    let confirmCallback = null;
+
+    function loadWorkspace() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            notebooks = parsed;
+            activeNotebookId = notebooks[0].id;
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to read localStorage, loading starter notebooks:', e);
+      }
+      notebooks = getStarterNotebooks();
+      activeNotebookId = notebooks[0].id;
+      saveWorkspace(false);
+    }
+
+    function saveWorkspace(showIndicator = true) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(notebooks));
+        if (showIndicator) {
+          const statusEl = document.getElementById('storage-status');
+          if (statusEl) {
+            statusEl.textContent = 'Synced ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          }
+        }
+      } catch (e) {
+        showToast('Storage quota warning: could not persist to localStorage', 'error');
+      }
+    }
+
+    function getActiveNotebook() {
+      return notebooks.find(n => n.id === activeNotebookId) || notebooks[0];
+    }
+
+    // ============================================================================
+    // 3. SIDEBAR & TAG FILTER RENDERING
+    // ============================================================================
+    function getAllUniqueTags() {
+      const tagSet = new Set();
+      notebooks.forEach(nb => (nb.tags || []).forEach(t => tagSet.add(t.toLowerCase())));
+      return Array.from(tagSet);
+    }
+
+    function renderSidebar() {
+      const badgeEl = document.getElementById('notebook-count-badge');
+      if (badgeEl) badgeEl.textContent = String(notebooks.length);
+
+      // Render Tag Filter Pills
+      const tagContainer = document.getElementById('tag-filter-container');
+      const allTags = ['ALL', ...getAllUniqueTags()];
+      tagContainer.innerHTML = allTags.map(tag => {
+        const isActive = activeTagFilter === tag;
+        return `
+          <button
+            onclick="setTagFilter('${escapeHtml(tag)}')"
+            class="px-2 py-0.5 rounded text-[10px] font-mono transition ${
+              isActive
+                ? 'bg-sky-500 text-slate-950 font-semibold'
+                : 'bg-studio-card text-slate-400 hover:text-slate-200 border border-studio-border'
+            }"
+          >
+            ${tag === 'ALL' ? 'All' : '#' + escapeHtml(tag)}
+          </button>
+        `;
+      }).join('');
+
+      // Filter notebooks by tag
+      const filteredNotebooks = notebooks.filter(nb => {
+        if (activeTagFilter === 'ALL') return true;
+        return (nb.tags || []).map(t => t.toLowerCase()).includes(activeTagFilter);
+      });
+
+      const listEl = document.getElementById('notebook-list');
+      listEl.innerHTML = filteredNotebooks.map(nb => {
+        const isSelected = nb.id === activeNotebookId;
+        const cellCount = (nb.cells || []).length;
+        return `
+          <div
+            onclick="selectNotebook('${nb.id}')"
+            class="group cursor-pointer rounded-xl p-3 border transition ${
+              isSelected
+                ? 'bg-studio-card border-sky-500/50 shadow-md shadow-sky-950/30'
+                : 'bg-studio-bg/40 border-transparent hover:bg-studio-hover hover:border-studio-border'
+            }"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div class="font-semibold text-xs sm:text-sm ${isSelected ? 'text-sky-400' : 'text-slate-200 group-hover:text-white'} truncate">
+                ${escapeHtml(nb.title)}
+              </div>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-studio-panel text-slate-400 border border-studio-border shrink-0">
+                ${cellCount} ${cellCount === 1 ? 'cell' : 'cells'}
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+              ${escapeHtml(nb.description || 'No description')}
+            </p>
+            <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-studio-border/50">
+              <div class="flex flex-wrap gap-1 overflow-hidden max-h-4">
+                ${(nb.tags || []).slice(0, 3).map(t => `
+                  <span class="text-[9px] font-mono text-slate-400 bg-studio-panel px-1.5 py-0.2 rounded">#${escapeHtml(t)}</span>
+                `).join('')}
+              </div>
+              <span class="text-[10px] text-slate-500 font-mono shrink-0">${escapeHtml(nb.updatedAt || '')}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setTagFilter(tag) {
+      activeTagFilter = tag;
+      renderSidebar();
+    }
+
+    function selectNotebook(id, scrollToCellId = null) {
+      activeNotebookId = id;
+      renderSidebar();
+      renderActiveNotebook();
+      // Close mobile drawer if open
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
+        toggleMobileSidebar();
+      }
+      if (scrollToCellId) {
+        setTimeout(() => {
+          const el = document.getElementById(`cell-dom-${scrollToCellId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-2', 'ring-sky-400');
+            setTimeout(() => el.classList.remove('ring-2', 'ring-sky-400'), 2200);
+          }
+        }, 100);
+      }
+    }
+
+    // ============================================================================
+    // 4. GLOBAL SEARCH ACROSS ALL NOTEBOOKS, CELLS & TAGS
+    // ============================================================================
+    function handleGlobalSearch(query) {
+      globalSearchQuery = (query || '').trim();
+      const clearBtn = document.getElementById('clear-search-btn');
+      const resultsPanel = document.getElementById('search-results-panel');
+      const nbList = document.getElementById('notebook-list');
+
+      if (!globalSearchQuery) {
+        clearBtn.classList.add('hidden');
+        resultsPanel.classList.add('hidden');
+        nbList.classList.remove('hidden');
+        return;
+      }
+
+      clearBtn.classList.remove('hidden');
+      nbList.classList.add('hidden');
+      resultsPanel.classList.remove('hidden');
+
+      const qLower = globalSearchQuery.toLowerCase();
+      const hits = [];
+
+      notebooks.forEach(nb => {
+        const nbMatch = nb.title.toLowerCase().includes(qLower) ||
+                        (nb.description || '').toLowerCase().includes(qLower) ||
+                        (nb.tags || []).some(t => t.toLowerCase().includes(qLower));
+
+        if (nbMatch) {
+          hits.push({
+            type: 'notebook',
+            nbId: nb.id,
+            nbTitle: nb.title,
+            title: nb.title,
+            snippet: nb.description || 'Notebook metadata match'
+          });
+        }
+
+        (nb.cells || []).forEach(cell => {
+          const bodyText = `${cell.title || ''} ${cell.content || ''} ${cell.code || ''} ${cell.filename || ''}`;
+          const idx = bodyText.toLowerCase().indexOf(qLower);
+          if (idx !== -1) {
+            const start = Math.max(0, idx - 32);
+            const snippet = bodyText.slice(start, idx + 68).replace(/\n/g, ' ');
+            hits.push({
+              type: 'cell',
+              nbId: nb.id,
+              nbTitle: nb.title,
+              cellId: cell.id,
+              cellType: cell.type,
+              title: cell.title || cell.filename || `${cell.type.toUpperCase()} Cell`,
+              snippet: (start > 0 ? '...' : '') + snippet + '...'
+            });
+          }
+        });
+      });
+
+      if (hits.length === 0) {
+        resultsPanel.innerHTML = `
+          <div class="text-center py-8 text-xs text-slate-500">
+            <i class="fa-solid fa-magnifying-glass-minus text-lg mb-2 block text-slate-600"></i>
+            No matches for "${escapeHtml(globalSearchQuery)}"
+          </div>
+        `;
+        return;
+      }
+
+      resultsPanel.innerHTML = `
+        <div class="text-[10px] font-mono uppercase tracking-wider text-sky-400 mb-2">
+          Found ${hits.length} match${hits.length === 1 ? '' : 'es'}
+        </div>
+        ${hits.map(h => `
+          <div
+            onclick="selectNotebook('${h.nbId}', '${h.cellId || ''}')"
+            class="p-2.5 rounded-lg bg-studio-card hover:bg-studio-hover border border-studio-border cursor-pointer transition"
+          >
+            <div class="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+              <span class="truncate font-medium text-sky-400">${escapeHtml(h.nbTitle)}</span>
+              <span class="uppercase font-mono px-1.5 py-0.2 rounded bg-studio-panel text-slate-300">${escapeHtml(h.cellType || 'NB')}</span>
+            </div>
+            <div class="text-xs font-semibold text-white truncate">${escapeHtml(h.title)}</div>
+            <div class="text-[11px] font-mono text-slate-400 truncate mt-1">${escapeHtml(h.snippet)}</div>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function clearGlobalSearch() {
+      const input = document.getElementById('global-search-input');
+      input.value = '';
+      handleGlobalSearch('');
+    }
+
+    // ============================================================================
+    // 5. NOTEBOOK CANVAS & CELL RENDERER
+    // ============================================================================
+    function renderActiveNotebook() {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+
+      document.getElementById('active-notebook-title').textContent = nb.title;
+
+      // Render header tags
+      const tagsEl = document.getElementById('active-notebook-tags');
+      tagsEl.innerHTML = (nb.tags || []).map(t => `
+        <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-studio-card border border-studio-border text-slate-400">
+          #${escapeHtml(t)}
+        </span>
+      `).join('');
+
+      const canvas = document.getElementById('notebook-canvas');
+      if (!nb.cells || nb.cells.length === 0) {
+        canvas.innerHTML = `
+          <div class="max-w-3xl mx-auto my-12 p-8 rounded-2xl border border-dashed border-studio-border bg-studio-panel/40 text-center">
+            <i class="fa-solid fa-layer-group text-3xl text-sky-400 mb-3"></i>
+            <h3 class="text-base font-bold text-white mb-1">This Notebook is Empty</h3>
+            <p class="text-xs text-slate-400 mb-5">Add a Markdown note, an executable JavaScript sandbox cell, or a Python/Userscript blueprint.</p>
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+              <button onclick="addNewCell('markdown')" class="px-3 py-1.5 rounded-lg bg-studio-card hover:bg-studio-hover border border-studio-border text-xs text-sky-400">+ Markdown Cell</button>
+              <button onclick="addNewCell('js')" class="px-3 py-1.5 rounded-lg bg-studio-card hover:bg-studio-hover border border-studio-border text-xs text-amber-400">+ JS Sandbox Cell</button>
+              <button onclick="addNewCell('blueprint')" class="px-3 py-1.5 rounded-lg bg-studio-card hover:bg-studio-hover border border-studio-border text-xs text-emerald-400">+ Python / Userscript Blueprint</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      canvas.innerHTML = `
+        <div class="max-w-5xl mx-auto space-y-5 pb-16">
+          <!-- Notebook Description Banner -->
+          <div class="px-4 py-3 rounded-xl bg-studio-panel/70 border border-studio-border flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs text-slate-300">${escapeHtml(nb.description || '')}</p>
+            <span class="text-[11px] font-mono text-slate-500">Last modified: ${escapeHtml(nb.updatedAt || 'Today')}</span>
+          </div>
+
+          <!-- Cells List -->
+          ${nb.cells.map((cell, idx) => renderCellCard(cell, idx, nb.cells.length)).join('')}
+
+          <!-- Bottom Add Cell Bar -->
+          <div class="pt-4 flex items-center justify-center gap-2 flex-wrap">
+            <button onclick="addNewCell('markdown')" class="px-3.5 py-2 rounded-xl bg-studio-panel hover:bg-studio-hover border border-studio-border text-xs text-slate-300 flex items-center gap-2 transition">
+              <i class="fa-brands fa-markdown text-sky-400"></i> Add Markdown Note
+            </button>
+            <button onclick="addNewCell('js')" class="px-3.5 py-2 rounded-xl bg-studio-panel hover:bg-studio-hover border border-studio-border text-xs text-slate-300 flex items-center gap-2 transition">
+              <i class="fa-brands fa-square-js text-amber-400"></i> Add Executable JS Cell
+            </button>
+            <button onclick="addNewCell('blueprint')" class="px-3.5 py-2 rounded-xl bg-studio-panel hover:bg-studio-hover border border-studio-border text-xs text-slate-300 flex items-center gap-2 transition">
+              <i class="fa-brands fa-python text-emerald-400"></i> Add Python / Userscript Blueprint
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Initialize interactive widgets if present in active notebook
+      nb.cells.forEach(c => {
+        if (c.type === 'widget') {
+          initWidgetCell(c);
+        }
+      });
+    }
+
+    function renderCellCard(cell, index, totalCells) {
+      const badgeConfig = {
+        markdown: { icon: 'fa-brands fa-markdown', label: 'MARKDOWN', color: 'text-sky-400 bg-sky-500/10 border-sky-500/30' },
+        js:       { icon: 'fa-brands fa-square-js', label: 'JS SANDBOX', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+        blueprint:{ icon: 'fa-brands fa-python', label: 'BLUEPRINT', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+        widget:   { icon: 'fa-solid fa-sliders', label: 'LIVE STUDIO APP', color: 'text-violet-400 bg-violet-500/10 border-violet-500/30' }
+      }[cell.type] || { icon: 'fa-solid fa-code', label: 'CELL', color: 'text-slate-400' };
+
+      return `
+        <section id="cell-dom-${cell.id}" class="cell-card rounded-2xl bg-studio-panel border border-studio-border overflow-hidden">
+          <!-- Cell Top Toolbar -->
+          <div class="px-3.5 py-2 bg-studio-card/90 border-b border-studio-border flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <span class="text-[10px] font-mono text-slate-500">[${index + 1}]</span>
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border ${badgeConfig.color}">
+                <i class="${badgeConfig.icon}"></i>
+                ${badgeConfig.label}
+              </span>
+              <input
+                type="text"
+                value="${escapeHtml(cell.title || '')}"
+                placeholder="Cell title..."
+                onchange="updateCellField('${cell.id}', 'title', this.value)"
+                class="bg-transparent text-xs font-medium text-slate-200 focus:text-white focus:outline-none border-b border-transparent focus:border-sky-400 px-1 py-0.5 truncate flex-1 min-w-[120px]"
+              />
+            </div>
+
+            <!-- Cell Specific + Ordering Controls -->
+            <div class="flex items-center gap-1">
+              ${renderCellSpecificToolbarActions(cell)}
+
+              <div class="h-3.5 w-[1px] bg-studio-border mx-1"></div>
+
+              <button
+                onclick="moveCell('${cell.id}', -1)"
+                ${index === 0 ? 'disabled' : ''}
+                title="Move Cell Up"
+                class="p-1.5 rounded hover:bg-studio-hover text-slate-400 hover:text-white disabled:opacity-25 text-xs transition"
+              >
+                <i class="fa-solid fa-arrow-up"></i>
+              </button>
+              <button
+                onclick="moveCell('${cell.id}', 1)"
+                ${index === totalCells - 1 ? 'disabled' : ''}
+                title="Move Cell Down"
+                class="p-1.5 rounded hover:bg-studio-hover text-slate-400 hover:text-white disabled:opacity-25 text-xs transition"
+              >
+                <i class="fa-solid fa-arrow-down"></i>
+              </button>
+              <button
+                onclick="duplicateCell('${cell.id}')"
+                title="Duplicate Cell"
+                class="p-1.5 rounded hover:bg-studio-hover text-slate-400 hover:text-white text-xs transition"
+              >
+                <i class="fa-regular fa-copy"></i>
+              </button>
+              <button
+                onclick="deleteCell('${cell.id}')"
+                title="Delete Cell"
+                class="p-1.5 rounded hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-xs transition"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cell Body Content -->
+          <div class="p-4">
+            ${renderCellBody(cell)}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderCellSpecificToolbarActions(cell) {
+      if (cell.type === 'markdown') {
+        const isEdit = cell.mode === 'edit';
+        return `
+          <button
+            onclick="toggleMarkdownMode('${cell.id}')"
+            class="px-2.5 py-1 rounded-md text-[11px] font-medium border transition ${
+              isEdit
+                ? 'bg-sky-500 text-slate-950 border-sky-400 font-semibold'
+                : 'bg-studio-bg text-sky-400 border-studio-border hover:border-sky-400'
+            }"
+          >
+            <i class="fa-solid ${isEdit ? 'fa-eye' : 'fa-pen'} mr-1"></i>
+            ${isEdit ? 'Render Preview' : 'Edit Markdown'}
+          </button>
+        `;
+      }
+
+      if (cell.type === 'js') {
+        return `
+          <button
+            onclick="executeJsCell('${cell.id}')"
+            class="px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold flex items-center gap-1.5 transition"
+          >
+            <i class="fa-solid fa-play text-[9px]"></i>
+            <span>Run JS</span>
+          </button>
+          <button
+            onclick="copyCellContent('${cell.id}')"
+            title="Copy Code"
+            class="px-2 py-1 rounded-md bg-studio-bg hover:bg-studio-hover text-slate-300 border border-studio-border text-[11px] transition"
+          >
+            <i class="fa-regular fa-clipboard"></i>
+          </button>
+        `;
+      }
+
+      if (cell.type === 'blueprint') {
+        return `
+          <input
+            type="text"
+            value="${escapeHtml(cell.filename || 'script.py')}"
+            onchange="updateCellField('${cell.id}', 'filename', this.value)"
+            title="Script filename for download"
+            class="w-36 sm:w-44 bg-studio-bg border border-studio-border rounded px-2 py-0.5 text-[11px] font-mono text-emerald-400 focus:outline-none focus:border-emerald-400"
+          />
+          <button
+            onclick="simulateBlueprintRun('${cell.id}')"
+            class="px-2.5 py-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-semibold flex items-center gap-1.5 transition"
+          >
+            <i class="fa-solid fa-terminal text-[10px]"></i>
+            <span class="hidden sm:inline">Simulate CLI</span>
+          </button>
+          <button
+            onclick="copyCellContent('${cell.id}')"
+            class="px-2 py-1 rounded-md bg-studio-bg hover:bg-studio-hover text-slate-300 border border-studio-border text-[11px] flex items-center gap-1 transition"
+          >
+            <i class="fa-regular fa-clipboard"></i>
+            <span class="hidden md:inline">Copy</span>
+          </button>
+          <button
+            onclick="downloadBlueprintFile('${cell.id}')"
+            class="px-2.5 py-1 rounded-md bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/30 text-[11px] font-medium flex items-center gap-1 transition"
+          >
+            <i class="fa-solid fa-download text-[10px]"></i>
+            <span class="hidden md:inline">Download</span>
+          </button>
+        `;
+      }
+
+      return '';
+    }
+
+    function renderCellBody(cell) {
+      // 1. MARKDOWN CELL
+      if (cell.type === 'markdown') {
+        if (cell.mode === 'edit') {
+          return `
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <div class="text-[10px] font-mono uppercase text-slate-500 mb-1">Markdown Source</div>
+                <textarea
+                  rows="9"
+                  oninput="updateMarkdownLive('${cell.id}', this.value)"
+                  class="w-full bg-studio-bg border border-studio-border rounded-xl p-3 text-xs sm:text-sm code-editor text-slate-200 focus:border-sky-400 focus:outline-none"
+                >${escapeHtml(cell.content || '')}</textarea>
+              </div>
+              <div>
+                <div class="text-[10px] font-mono uppercase text-slate-500 mb-1">Live Rendered Preview</div>
+                <div id="md-preview-${cell.id}" class="p-3.5 rounded-xl bg-studio-bg/60 border border-studio-border md-prose min-h-[190px]">
+                  ${parseMarkdownToHtml(cell.content || '')}
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div
+              ondblclick="toggleMarkdownMode('${cell.id}')"
+              title="Double-click to edit Markdown"
+              class="md-prose cursor-text px-1"
+            >
+              ${parseMarkdownToHtml(cell.content || '*Empty note. Click Edit Markdown to add content.*')}
+            </div>
+          `;
+        }
+      }
+
+      // 2. EXECUTABLE JAVASCRIPT CELL
+      if (cell.type === 'js') {
+        const out = cellOutputs[cell.id];
+        return `
+          <div class="space-y-3">
+            <div class="relative">
+              <textarea
+                id="js-editor-${cell.id}"
+                rows="${Math.min(16, Math.max(5, (cell.code || '').split('\n').length + 1))}"
+                onkeydown="handleCodeKeydown(event, '${cell.id}', 'js')"
+                oninput="updateCellFieldSilent('${cell.id}', 'code', this.value)"
+                spellcheck="false"
+                class="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 text-xs sm:text-[13px] code-editor text-amber-100 focus:border-amber-400 focus:outline-none"
+              >${escapeHtml(cell.code || '')}</textarea>
+              <span class="absolute bottom-2.5 right-3 text-[10px] font-mono text-slate-500 pointer-events-none">Shift + Enter to Run</span>
+            </div>
+            <div id="js-output-${cell.id}">
+              ${out ? renderJsExecutionOutput(out) : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      // 3. PYTHON / USERSCRIPT BLUEPRINT CELL
+      if (cell.type === 'blueprint') {
+        const simVisible = cell.showSimOutput;
+        return `
+          <div class="space-y-3">
+            <div class="relative">
+              <textarea
+                id="bp-editor-${cell.id}"
+                rows="${Math.min(18, Math.max(6, (cell.code || '').split('\n').length))}"
+                oninput="updateCellFieldSilent('${cell.id}', 'code', this.value)"
+                spellcheck="false"
+                class="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 text-xs sm:text-[13px] code-editor text-emerald-100 focus:border-emerald-400 focus:outline-none"
+              >${escapeHtml(cell.code || '')}</textarea>
+            </div>
+            <div id="bp-sim-${cell.id}" class="${simVisible ? '' : 'hidden'}">
+              <div class="rounded-xl bg-black/80 border border-emerald-500/30 overflow-hidden">
+                <div class="px-3 py-1.5 bg-emerald-950/40 border-b border-emerald-500/20 flex items-center justify-between text-[11px] font-mono text-emerald-400">
+                  <span><i class="fa-solid fa-terminal mr-1.5"></i>Simulated CLI Execution Output (${escapeHtml(cell.filename || 'script.py')})</span>
+                  <button onclick="hideBlueprintSim('${cell.id}')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <pre class="p-3.5 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed">${escapeHtml(cell.simulatedOutput || '$ Script executed successfully (0 errors).')}</pre>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 4. INTERACTIVE DOMAIN WIDGET CELL
+      if (cell.type === 'widget') {
+        return `<div id="widget-mount-${cell.id}"></div>`;
+      }
+
+      return '';
+    }
+
+    // ============================================================================
+    // 6. INTERACTIVE DOMAIN WIDGETS (TECH PULSE, GREENOPS, TF2 ARBITRAGE)
+    // ============================================================================
+    function initWidgetCell(cell) {
+      const mount = document.getElementById(`widget-mount-${cell.id}`);
+      if (!mount) return;
+
+      // WIDGET A: GLOBAL & TECH PULSE LIVE RUNNER
+      if (cell.widgetType === 'tech-pulse-radar') {
+        mount.innerHTML = `
+          <div class="bg-studio-bg border border-studio-border rounded-xl p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h4 class="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+                  Live Public API Fetcher & Pulse Briefing Generator
+                </h4>
+                <p class="text-[11px] text-slate-400">Queries Hacker News Firebase API directly from your browser & synthesizes GitHub + arXiv frontier feeds.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  onclick="runLiveTechPulseWidget('${cell.id}')"
+                  class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs flex items-center gap-1.5 transition shadow"
+                >
+                  <i class="fa-solid fa-satellite-dish"></i>
+                  <span>Fetch Live Pulse Now</span>
+                </button>
+              </div>
+            </div>
+            <div id="tech-pulse-results-${cell.id}" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <!-- Populated on load or button click -->
+            </div>
+          </div>
+        `;
+        runLiveTechPulseWidget(cell.id, false);
+      }
+
+      // WIDGET B: GREENOPS RENEWABLE SCORE & AI DEMAND SHAPER
+      if (cell.widgetType === 'greenops-calculator') {
+        mount.innerHTML = `
+          <div class="bg-studio-bg border border-studio-border rounded-xl p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-studio-border pb-3">
+              <div>
+                <h4 class="text-xs sm:text-sm font-bold text-emerald-400 flex items-center gap-2">
+                  <i class="fa-solid fa-leaf"></i>
+                  Multi-Region Clean-Grid Router & AI Demand Shaper
+                </h4>
+                <p class="text-[11px] text-slate-400">Adjust solar irradiance (W/m²) & wind telemetry (km/h) or ping live Open-Meteo coordinates.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <select
+                  id="go-region-${cell.id}"
+                  onchange="applyGreenOpsRegionPreset('${cell.id}')"
+                  class="bg-studio-panel border border-studio-border rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-400"
+                >
+                  <option value="610,24.8,ap-southeast-kl (Selangor/KL)">🇲🇾 ap-southeast-kl (Selangor/KL)</option>
+                  <option value="310,41.3,eu-north-stockholm (Stockholm)">🇸🇪 eu-north-stockholm (Stockholm)</option>
+                  <option value="280,25.4,eu-central-frankfurt (Frankfurt)">🇩🇪 eu-central-frankfurt (Frankfurt)</option>
+                  <option value="120,25.3,ap-northeast-tokyo (Tokyo)">🇯🇵 ap-northeast-tokyo (Tokyo)</option>
+                  <option value="15,12.0,us-west-oregon (Night/Low Wind)">🇺🇸 us-west-oregon (us-west-2)</option>
+                </select>
+                <button
+                  onclick="pingLiveOpenMeteo('${cell.id}')"
+                  class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-medium transition"
+                >
+                  <i class="fa-solid fa-cloud-sun-rain mr-1"></i>Live Open-Meteo
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <!-- Sliders -->
+              <div class="space-y-3 bg-studio-panel p-3.5 rounded-xl border border-studio-border">
+                <div>
+                  <div class="flex justify-between text-xs mb-1">
+                    <span class="text-slate-300"><i class="fa-solid fa-sun text-amber-400 mr-1"></i>Shortwave Solar Radiation</span>
+                    <span id="go-solar-val-${cell.id}" class="font-mono text-amber-400 font-semibold">610 W/m²</span>
+                  </div>
+                  <input id="go-solar-${cell.id}" type="range" min="0" max="800" step="10" value="610" oninput="recalcGreenOps('${cell.id}')" class="w-full accent-amber-400 cursor-pointer" />
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs mb-1">
+                    <span class="text-slate-300"><i class="fa-solid fa-wind text-sky-400 mr-1"></i>10m Wind Speed</span>
+                    <span id="go-wind-val-${cell.id}" class="font-mono text-sky-400 font-semibold">24.8 km/h</span>
+                  </div>
+                  <input id="go-wind-${cell.id}" type="range" min="0" max="50" step="0.5" value="24.8" oninput="recalcGreenOps('${cell.id}')" class="w-full accent-sky-400 cursor-pointer" />
+                </div>
+              </div>
+
+              <!-- Live Computed Dispatch Profile -->
+              <div id="go-output-${cell.id}" class="bg-studio-panel p-3.5 rounded-xl border border-studio-border"></div>
+            </div>
+          </div>
+        `;
+        recalcGreenOps(cell.id);
+      }
+
+      // WIDGET C: TF2 CROSS-MARKET ARBITRAGE & BREAK-EVEN CALCULATOR
+      if (cell.widgetType === 'tf2-arbitrage-calc') {
+        mount.innerHTML = `
+          <div class="bg-studio-bg border border-studio-border rounded-xl p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-studio-border pb-3">
+              <div>
+                <h4 class="text-xs sm:text-sm font-bold text-amber-400 flex items-center gap-2">
+                  <i class="fa-solid fa-scale-balanced"></i>
+                  TF2 Cross-Market Arbitrage & Fee Break-Even Modeler
+                </h4>
+                <p class="text-[11px] text-slate-400">Compare Marketplace.tf USD asking prices against Backpack.tf Bot Buy Orders & Steam Market 15% fee break-even.</p>
+              </div>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button onclick="loadTf2Preset('${cell.id}', 'Tour of Duty Ticket', 0.79, 0, 33.88)" class="px-2 py-1 rounded bg-studio-panel hover:bg-studio-hover border border-studio-border text-[11px] text-slate-300">Preset: ToD Ticket</button>
+                <button onclick="loadTf2Preset('${cell.id}', 'Earbuds', 8.90, 5, 34.00)" class="px-2 py-1 rounded bg-studio-panel hover:bg-studio-hover border border-studio-border text-[11px] text-slate-300">Preset: Earbuds</button>
+                <button onclick="loadTf2Preset('${cell.id}', 'Australium Medi Gun', 58.50, 37, 0)" class="px-2 py-1 rounded bg-studio-panel hover:bg-studio-hover border border-studio-border text-[11px] text-slate-300">Preset: Australium</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+              <div class="col-span-2 sm:col-span-1">
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Item SKU / Name</label>
+                <input id="tf2-name-${cell.id}" type="text" value="Earbuds" oninput="recalcTf2Arbitrage('${cell.id}')" class="w-full bg-studio-panel border border-studio-border rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-amber-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">MPTF Cash ($ USD)</label>
+                <input id="tf2-usd-${cell.id}" type="number" step="0.01" value="8.90" oninput="recalcTf2Arbitrage('${cell.id}')" class="w-full bg-studio-panel border border-studio-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-400 focus:border-amber-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">BPTF Bot Buy (Keys)</label>
+                <input id="tf2-bptf-keys-${cell.id}" type="number" step="1" value="5" oninput="recalcTf2Arbitrage('${cell.id}')" class="w-full bg-studio-panel border border-studio-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 focus:border-amber-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">BPTF Bot Buy (Ref)</label>
+                <input id="tf2-bptf-ref-${cell.id}" type="number" step="0.11" value="34.00" oninput="recalcTf2Arbitrage('${cell.id}')" class="w-full bg-studio-panel border border-studio-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 focus:border-amber-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Benchmarks ($/Key | Ref)</label>
+                <div class="flex gap-1">
+                  <input id="tf2-keyusd-${cell.id}" type="number" step="0.01" value="1.72" oninput="recalcTf2Arbitrage('${cell.id}')" title="Cash USD per Key" class="w-1/2 bg-studio-panel border border-studio-border rounded-lg px-1.5 py-1.5 text-xs font-mono text-slate-200" />
+                  <input id="tf2-keyref-${cell.id}" type="number" step="0.5" value="68.0" oninput="recalcTf2Arbitrage('${cell.id}')" title="Refined Metal per Key" class="w-1/2 bg-studio-panel border border-studio-border rounded-lg px-1.5 py-1.5 text-xs font-mono text-slate-200" />
+                </div>
+              </div>
+            </div>
+
+            <div id="tf2-arb-results-${cell.id}" class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1"></div>
+          </div>
+        `;
+        recalcTf2Arbitrage(cell.id);
+      }
+    }
+
+    // --- Widget Logic A: Live Tech Pulse Fetcher ---
+    async function runLiveTechPulseWidget(cellId, notify = true) {
+      const container = document.getElementById(`tech-pulse-results-${cellId}`);
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="col-span-3 py-6 text-center text-xs text-slate-400 font-mono">
+          <i class="fa-solid fa-circle-notch fa-spin text-sky-400 mr-2"></i>Polling live Hacker News Firebase API & synthesizing GitHub / arXiv feeds...
+        </div>
+      `;
+
+      let hnStories = [
+        { title: "SQLite WAL Mode reaches 450k concurrent reads/sec on modern NVMe", score: 612, url: "https://news.ycombinator.com" },
+        { title: "Show HN: Zero-dependency Carbon-Aware Cron scheduler in 120 lines of Python", score: 389, url: "https://news.ycombinator.com" },
+        { title: "Deterministic WebSocket Order Book Indexing for Virtual Economies", score: 274, url: "https://news.ycombinator.com" }
+      ];
+
+      try {
+        const res = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+        if (res.ok) {
+          const ids = (await res.json()).slice(0, 3);
+          const fetched = await Promise.all(ids.map(async id => {
+            const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+            return itemRes.json();
+          }));
+          if (fetched.length > 0) {
+            hnStories = fetched.map(it => ({
+              title: it.title || 'Untitled HN Story',
+              score: it.score || 100,
+              url: it.url || `https://news.ycombinator.com/item?id=${it.id}`
+            }));
+          }
+        }
+      } catch (_) {
+        // Fallback stories used if offline or blocked
+      }
+
+      const ghRepos = [
+        { name: "tensor-forge/micro-vllm-edge", lang: "Rust", stars: "3,420", desc: "4-bit speculative decoding engine for edge NPUs" },
+        { name: "greencloud-io/watts-scheduler", lang: "Go", stars: "1,985", desc: "Carbon-aware Kubernetes workload router" },
+        { name: "autobot-labs/steam-ws-firehose", lang: "Python", stars: "1,140", desc: "Resilient WebSocket order book SQLite indexer" }
+      ];
+
+      const arxivPapers = [
+        { title: "Sub-Quadratic State Space World Models for Dexterous Manipulation", cat: "cs.RO / cs.AI" },
+        { title: "Fault-Tolerant Logical Qubit Routing via Lattice Surgery", cat: "quant-ph" },
+        { title: "Carbon-Proportional LLM Inference via Dynamic Quantization Tiers", cat: "cs.AI / cs.DC" }
+      ];
+
+      container.innerHTML = `
+        <div class="p-3 rounded-xl bg-studio-panel border border-studio-border space-y-2">
+          <div class="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+            <span>📰 Hacker News (Live)</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400">200 OK</span>
+          </div>
+          ${hnStories.map(s => `
+            <div class="p-2 rounded-lg bg-studio-bg/70 border border-studio-border/60 text-xs">
+              <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" class="font-medium text-slate-200 hover:text-sky-400 line-clamp-2">${escapeHtml(s.title)}</a>
+              <div class="text-[10px] font-mono text-amber-400/90 mt-1">▲ ${s.score} pts</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="p-3 rounded-xl bg-studio-panel border border-studio-border space-y-2">
+          <div class="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">
+            <span>🚀 GitHub 7-Day Velocity</span>
+            <span class="text-[9px] font-mono text-slate-400">Top Stars</span>
+          </div>
+          ${ghRepos.map(r => `
+            <div class="p-2 rounded-lg bg-studio-bg/70 border border-studio-border/60 text-xs">
+              <div class="font-mono font-semibold text-sky-300 truncate">${escapeHtml(r.name)}</div>
+              <div class="text-[11px] text-slate-400 truncate">${escapeHtml(r.desc)}</div>
+              <div class="text-[10px] font-mono text-slate-500 mt-1">${r.lang} • ⭐ ${r.stars}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="p-3 rounded-xl bg-studio-panel border border-studio-border space-y-2">
+          <div class="text-[11px] font-bold text-violet-400 uppercase tracking-wider flex items-center justify-between">
+            <span>🧠 arXiv Preprints</span>
+            <span class="text-[9px] font-mono text-slate-400">cs.AI / quant-ph</span>
+          </div>
+          ${arxivPapers.map(p => `
+            <div class="p-2 rounded-lg bg-studio-bg/70 border border-studio-border/60 text-xs">
+              <div class="font-medium text-slate-200 line-clamp-2">${escapeHtml(p.title)}</div>
+              <div class="text-[10px] font-mono text-violet-400 mt-1">${escapeHtml(p.cat)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      if (notify) showToast('Updated Global & Tech Pulse feeds', 'success');
+    }
+
+    // --- Widget Logic B: GreenOps Renewable Score & Demand Shaper ---
+    function applyGreenOpsRegionPreset(cellId) {
+      const sel = document.getElementById(`go-region-${cellId}`).value;
+      const [solar, wind] = sel.split(',');
+      document.getElementById(`go-solar-${cellId}`).value = solar;
+      document.getElementById(`go-wind-${cellId}`).value = wind;
+      recalcGreenOps(cellId);
+    }
+
+    async function pingLiveOpenMeteo(cellId) {
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=3.14&longitude=101.69&current=shortwave_radiation,wind_speed_10m&timezone=UTC');
+        if (res.ok) {
+          const data = await res.json();
+          const cur = data.current || {};
+          const solar = Math.round(cur.shortwave_radiation || 420);
+          const wind = Number(cur.wind_speed_10m || 18.5).toFixed(1);
+          document.getElementById(`go-solar-${cellId}`).value = solar;
+          document.getElementById(`go-wind-${cellId}`).value = wind;
+          recalcGreenOps(cellId);
+          showToast(`Fetched live Open-Meteo telemetry: ${solar} W/m², ${wind} km/h`, 'success');
+          return;
+        }
+      } catch (_) {}
+      showToast('Simulated Open-Meteo telemetry applied', 'info');
+    }
+
+    function recalcGreenOps(cellId) {
+      const solar = parseFloat(document.getElementById(`go-solar-${cellId}`)?.value || 0);
+      const wind = parseFloat(document.getElementById(`go-wind-${cellId}`)?.value || 0);
+
+      document.getElementById(`go-solar-val-${cellId}`).textContent = `${solar} W/m²`;
+      document.getElementById(`go-wind-val-${cellId}`).textContent = `${wind.toFixed(1)} km/h`;
+
+      const solarNorm = Math.min(solar / 800.0, 1.0) * 100.0;
+      const windNorm = Math.min(wind / 50.0, 1.0) * 100.0;
+      const score = Number(((0.55 * solarNorm) + (0.45 * windNorm)).toFixed(1));
+
+      let profile = {
+        mode: 'ECO_SHAPED_DIRTY_GRID',
+        badgeColor: 'text-rose-400 bg-rose-500/15 border-rose-500/30',
+        barColor: 'bg-rose-500',
+        llm: 'small-distilled-int4',
+        quant: '4-bit AWQ',
+        batch: 32,
+        cacheTtl: '7200s'
+      };
+
+      if (score >= 55.0) {
+        profile = {
+          mode: 'HIGH_CAPACITY_CLEAN',
+          badgeColor: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
+          barColor: 'bg-emerald-400',
+          llm: 'frontier-fp16',
+          quant: 'None (Full Precision)',
+          batch: 1,
+          cacheTtl: '300s'
+        };
+      } else if (score >= 25.0) {
+        profile = {
+          mode: 'BALANCED_MODERATE',
+          badgeColor: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
+          barColor: 'bg-amber-400',
+          llm: 'mid-tier-int8',
+          quant: '8-bit Dynamic',
+          batch: 8,
+          cacheTtl: '1800s'
+        };
+      }
+
+      const outEl = document.getElementById(`go-output-${cellId}`);
+      if (!outEl) return;
+
+      outEl.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-slate-300">Renewable Availability Score</span>
+          <span class="text-lg font-mono font-bold text-white">${score} <span class="text-xs text-slate-400">/ 100</span></span>
+        </div>
+        <div class="w-full h-2 bg-studio-bg rounded-full overflow-hidden mb-3 border border-studio-border">
+          <div class="h-full ${profile.barColor} transition-all duration-200" style="width: ${Math.min(100, score)}%"></div>
+        </div>
+        <div class="flex items-center justify-between text-xs mb-2">
+          <span class="text-slate-400">Demand Shaping Profile:</span>
+          <span class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded border ${profile.badgeColor}">${profile.mode}</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t border-studio-border/60 font-mono text-[11px]">
+          <div class="bg-studio-bg p-1.5 rounded">
+            <div class="text-[9px] text-slate-500 uppercase">LLM Tier</div>
+            <div class="text-slate-200 truncate">${profile.llm}</div>
+          </div>
+          <div class="bg-studio-bg p-1.5 rounded">
+            <div class="text-[9px] text-slate-500 uppercase">Quantization</div>
+            <div class="text-slate-200 truncate">${profile.quant}</div>
+          </div>
+          <div class="bg-studio-bg p-1.5 rounded">
+            <div class="text-[9px] text-slate-500 uppercase">Batch / TTL</div>
+            <div class="text-slate-200">${profile.batch}x / ${profile.cacheTtl}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- Widget Logic C: TF2 Cross-Market Arbitrage Calculator ---
+    function loadTf2Preset(cellId, name, usd, keys, ref) {
+      document.getElementById(`tf2-name-${cellId}`).value = name;
+      document.getElementById(`tf2-usd-${cellId}`).value = usd;
+      document.getElementById(`tf2-bptf-keys-${cellId}`).value = keys;
+      document.getElementById(`tf2-bptf-ref-${cellId}`).value = ref;
+      recalcTf2Arbitrage(cellId);
+    }
+
+    function recalcTf2Arbitrage(cellId) {
+      const usd = parseFloat(document.getElementById(`tf2-usd-${cellId}`)?.value || 0);
+      const bptfKeys = parseFloat(document.getElementById(`tf2-bptf-keys-${cellId}`)?.value || 0);
+      const bptfRef = parseFloat(document.getElementById(`tf2-bptf-ref-${cellId}`)?.value || 0);
+      const keyUsd = parseFloat(document.getElementById(`tf2-keyusd-${cellId}`)?.value || 1.72);
+      const keyRef = parseFloat(document.getElementById(`tf2-keyref-${cellId}`)?.value || 68.0);
+
+      // 1. Direct Key/Ref equivalent of the USD cash spent
+      const directKeysFloat = keyUsd > 0 ? usd / keyUsd : 0;
+      const directWholeKeys = Math.floor(directKeysFloat);
+      const directRemRef = ((directKeysFloat - directWholeKeys) * keyRef).toFixed(2);
+      const directTotalRef = directKeysFloat * keyRef;
+
+      // 2. Backpack.tf Bot Buy Order total in Refined Metal
+      const bptfTotalRef = (bptfKeys * keyRef) + bptfRef;
+      const bptfYieldedKeys = keyRef > 0 ? bptfTotalRef / keyRef : 0;
+      const effectiveUsdPerKey = bptfYieldedKeys > 0 ? (usd / bptfYieldedKeys) : 0;
+      const netSpreadRef = bptfTotalRef - directTotalRef;
+
+      // 3. Steam Community Market (+15% fee) & Marketplace.tf (+10% fee) Break-Evens
+      const scmBreakEvenUsd = (usd * 1.15).toFixed(2);
+      const mptfResellBreakEvenUsd = (usd / 0.90).toFixed(2);
+
+      const isProfitable = netSpreadRef > 0;
+
+      const out = document.getElementById(`tf2-arb-results-${cellId}`);
+      if (!out) return;
+
+      out.innerHTML = `
+        <div class="p-3 rounded-xl bg-studio-panel border border-studio-border">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Cash -> Pure Equivalent</div>
+          <div class="text-sm font-mono font-bold text-amber-300 mt-1">${directWholeKeys} Keys, ${directRemRef} Ref</div>
+          <div class="text-[11px] font-mono text-slate-500 mt-0.5">(${directTotalRef.toFixed(1)} ref @ $${keyUsd}/key)</div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-studio-panel border border-studio-border">
+          <div class="text-[10px] font-mono uppercase text-slate-400">BPTF Instant Bot Payout</div>
+          <div class="text-sm font-mono font-bold text-sky-300 mt-1">${bptfTotalRef.toFixed(2)} Ref</div>
+          <div class="text-[11px] font-mono text-slate-500 mt-0.5">Eff. Key Cost: <strong class="text-white">$${effectiveUsdPerKey.toFixed(2)}/key</strong></div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-studio-panel border ${isProfitable ? 'border-emerald-500/40 bg-emerald-950/15' : 'border-rose-500/30'}">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Cross-Market Arbitrage</div>
+          <div class="text-sm font-mono font-bold ${isProfitable ? 'text-emerald-400' : 'text-rose-400'} mt-1">
+            ${isProfitable ? '🔥 +' : ''}${netSpreadRef.toFixed(2)} Ref
+          </div>
+          <div class="text-[11px] font-mono text-slate-400 mt-0.5">
+            ${isProfitable ? 'Cheaper than buying keys!' : 'Buy keys directly instead'}
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-studio-panel border border-studio-border">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Resell Break-Even Targets</div>
+          <div class="text-xs font-mono text-slate-200 mt-1">SCM (+15%): <span class="text-amber-400 font-semibold">$${scmBreakEvenUsd}</span></div>
+          <div class="text-xs font-mono text-slate-200 mt-0.5">MPTF (10%): <span class="text-sky-400 font-semibold">$${mptfResellBreakEvenUsd}</span></div>
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // 7. JAVASCRIPT SANDBOX EXECUTION ENGINE & BLUEPRINT RUNNER
+    // ============================================================================
+    async function executeJsCell(cellId) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (!cell) return;
+
+      const editorEl = document.getElementById(`js-editor-${cellId}`);
+      if (editorEl) {
+        cell.code = editorEl.value;
+        saveWorkspace();
+      }
+
+      const logs = [];
+      const tables = [];
+      let returnVal = undefined;
+      let errorMsg = null;
+
+      // Custom sandboxed console proxy
+      const sandboxConsole = {
+        log: (...args) => logs.push({ level: 'log', text: args.map(formatConsoleArg).join(' ') }),
+        info: (...args) => logs.push({ level: 'info', text: args.map(formatConsoleArg).join(' ') }),
+        warn: (...args) => logs.push({ level: 'warn', text: args.map(formatConsoleArg).join(' ') }),
+        error: (...args) => logs.push({ level: 'error', text: args.map(formatConsoleArg).join(' ') }),
+        table: (data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            tables.push(data);
+          } else if (data && typeof data === 'object') {
+            tables.push([data]);
+          } else {
+            logs.push({ level: 'log', text: formatConsoleArg(data) });
+          }
+        }
+      };
+
+      const startTime = performance.now();
+      try {
+        const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+        const runner = new AsyncFunction('console', cell.code);
+        returnVal = await runner(sandboxConsole);
+      } catch (err) {
+        errorMsg = err && err.stack ? err.stack : String(err);
+      }
+      const durationMs = (performance.now() - startTime).toFixed(2);
+
+      cellOutputs[cellId] = { logs, tables, returnVal, error: errorMsg, durationMs };
+
+      const outContainer = document.getElementById(`js-output-${cellId}`);
+      if (outContainer) {
+        outContainer.innerHTML = renderJsExecutionOutput(cellOutputs[cellId]);
+      }
+    }
+
+    function formatConsoleArg(val) {
+      if (typeof val === 'string') return val;
+      try {
+        return JSON.stringify(val, null, 2);
+      } catch (_) {
+        return String(val);
+      }
+    }
+
+    function renderJsExecutionOutput(out) {
+      if (!out) return '';
+      const hasError = Boolean(out.error);
+
+      const tablesHtml = (out.tables || []).map(rows => {
+        const keys = Object.keys(rows[0] || {});
+        return `
+          <div class="overflow-x-auto my-2 rounded-lg border border-studio-border">
+            <table class="w-full text-left border-collapse text-xs font-mono">
+              <thead>
+                <tr class="bg-studio-card text-sky-400 border-b border-studio-border">
+                  <th class="py-1.5 px-2.5">#</th>
+                  ${keys.map(k => `<th class="py-1.5 px-2.5">${escapeHtml(k)}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((r, i) => `
+                  <tr class="border-b border-studio-border/50 hover:bg-white/5">
+                    <td class="py-1.5 px-2.5 text-slate-500">${i}</td>
+                    ${keys.map(k => `<td class="py-1.5 px-2.5 text-slate-200">${escapeHtml(formatConsoleArg(r[k]))}</td>`).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }).join('');
+
+      const logsHtml = (out.logs || []).map(l => {
+        const color = l.level === 'error' ? 'text-rose-400' : l.level === 'warn' ? 'text-amber-400' : 'text-slate-200';
+        return `<pre class="text-xs font-mono ${color} whitespace-pre-wrap leading-relaxed">${escapeHtml(l.text)}</pre>`;
+      }).join('');
+
+      const returnHtml = out.returnVal !== undefined ? `
+        <div class="mt-2 pt-2 border-t border-studio-border/60 flex items-center gap-2 text-xs font-mono text-emerald-400">
+          <span>↳ Return:</span>
+          <span>${escapeHtml(formatConsoleArg(out.returnVal))}</span>
+        </div>
+      ` : '';
+
+      const errorHtml = hasError ? `
+        <pre class="text-xs font-mono text-rose-400 bg-rose-950/30 border border-rose-500/30 rounded-lg p-2.5 whitespace-pre-wrap">${escapeHtml(out.error)}</pre>
+      ` : '';
+
+      return `
+        <div class="rounded-xl bg-black/75 border ${hasError ? 'border-rose-500/40' : 'border-studio-border'} p-3.5 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 pb-1 border-b border-studio-border/60">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full ${hasError ? 'bg-rose-500' : 'bg-emerald-400'}"></span>
+              ${hasError ? 'Execution Error' : 'Sandbox Execution Complete'}
+            </span>
+            <span>⏱ ${out.durationMs} ms</span>
+          </div>
+          ${tablesHtml}
+          ${logsHtml}
+          ${errorHtml}
+          ${returnHtml}
+        </div>
+      `;
+    }
+
+    function simulateBlueprintRun(cellId) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (!cell) return;
+
+      cell.showSimOutput = true;
+      if (!cell.simulatedOutput) {
+        const ext = (cell.filename || '').endsWith('.js') ? 'node' : 'python3';
+        cell.simulatedOutput = `$ ${ext} ${cell.filename || 'script.py'}\n[*] Initializing ${cell.title || 'automation script'}...\n[+] Execution finished cleanly in 42ms.`;
+      }
+      const simEl = document.getElementById(`bp-sim-${cellId}`);
+      if (simEl) simEl.classList.remove('hidden');
+      showToast(`Simulated ${cell.filename || 'script'} execution`, 'success');
+    }
+
+    function hideBlueprintSim(cellId) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (cell) cell.showSimOutput = false;
+      const simEl = document.getElementById(`bp-sim-${cellId}`);
+      if (simEl) simEl.classList.add('hidden');
+    }
+
+    async function runAllExecutableCells() {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+      let count = 0;
+      for (const cell of nb.cells) {
+        if (cell.type === 'js') {
+          await executeJsCell(cell.id);
+          count++;
+        } else if (cell.type === 'blueprint') {
+          simulateBlueprintRun(cell.id);
+          count++;
+        } else if (cell.type === 'widget' && cell.widgetType === 'tech-pulse-radar') {
+          runLiveTechPulseWidget(cell.id, false);
+          count++;
+        }
+      }
+      showToast(`Executed ${count} runnable cells in "${nb.title}"`, 'success');
+    }
+
+    function handleCodeKeydown(event, cellId, type) {
+      if (event.key === 'Enter' && event.shiftKey) {
+        event.preventDefault();
+        if (type === 'js') executeJsCell(cellId);
+      }
+    }
+
+    // ============================================================================
+    // 8. CELL & NOTEBOOK CRUD OPERATIONS
+    // ============================================================================
+    function toggleMarkdownMode(cellId) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (!cell) return;
+      cell.mode = cell.mode === 'edit' ? 'preview' : 'edit';
+      saveWorkspace();
+      renderActiveNotebook();
+    }
+
+    function updateMarkdownLive(cellId, value) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (!cell) return;
+      cell.content = value;
+      nb.updatedAt = getFormattedTimestamp();
+      saveWorkspace();
+      const previewEl = document.getElementById(`md-preview-${cellId}`);
+      if (previewEl) {
+        previewEl.innerHTML = parseMarkdownToHtml(value);
+      }
+    }
+
+    function updateCellField(cellId, field, value) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (!cell) return;
+      cell[field] = value;
+      nb.updatedAt = getFormattedTimestamp();
+      saveWorkspace();
+    }
+
+    function updateCellFieldSilent(cellId, field, value) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (!cell) return;
+      cell[field] = value;
+      saveWorkspace();
+    }
+
+    function addNewCell(type) {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+
+      const id = 'cell-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+      let newCell = { id, type, title: '' };
+
+      if (type === 'markdown') {
+        newCell.title = 'Documentation Note';
+        newCell.mode = 'edit';
+        newCell.content = `## New Automation Note\n\nWrite documentation, API notes, or formulas here.`;
+      } else if (type === 'js') {
+        newCell.title = 'Executable JavaScript Sandbox';
+        newCell.code = `// Press Shift + Enter or click "Run JS" to execute\nconst timestamp = new Date().toISOString();\nconsole.log("Sandbox active at:", timestamp);\nreturn { status: "OK", timestamp };`;
+      } else if (type === 'blueprint') {
+        newCell.title = 'Python / Userscript Automation Blueprint';
+        newCell.filename = 'custom_automation.py';
+        newCell.language = 'python';
+        newCell.code = `#!/usr/bin/env python3\n"""\ncustom_automation.py — Custom Automation Blueprint\n"""\nimport urllib.request\nimport json\n\ndef main():\n    print("🚀 Running custom automation pipeline...")\n\nif __name__ == "__main__":\n    main()`;
+        newCell.simulatedOutput = `$ python3 custom_automation.py\n🚀 Running custom automation pipeline...\n✅ Completed in 18ms.`;
+      }
+
+      nb.cells.push(newCell);
+      nb.updatedAt = getFormattedTimestamp();
+      saveWorkspace();
+      renderSidebar();
+      renderActiveNotebook();
+      selectNotebook(nb.id, id);
+      showToast(`Added ${type.toUpperCase()} cell`, 'success');
+    }
+
+    function moveCell(cellId, direction) {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+      const idx = nb.cells.findIndex(c => c.id === cellId);
+      if (idx === -1) return;
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= nb.cells.length) return;
+
+      const temp = nb.cells[idx];
+      nb.cells[idx] = nb.cells[targetIdx];
+      nb.cells[targetIdx] = temp;
+      nb.updatedAt = getFormattedTimestamp();
+      saveWorkspace();
+      renderActiveNotebook();
+    }
+
+    function duplicateCell(cellId) {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+      const idx = nb.cells.findIndex(c => c.id === cellId);
+      if (idx === -1) return;
+
+      const clone = JSON.parse(JSON.stringify(nb.cells[idx]));
+      clone.id = 'cell-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+      clone.title = (clone.title || 'Cell') + ' (Copy)';
+      nb.cells.splice(idx + 1, 0, clone);
+      nb.updatedAt = getFormattedTimestamp();
+      saveWorkspace();
+      renderSidebar();
+      renderActiveNotebook();
+      showToast('Cell duplicated', 'success');
+    }
+
+    function deleteCell(cellId) {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+      nb.cells = nb.cells.filter(c => c.id !== cellId);
+      nb.updatedAt = getFormattedTimestamp();
+      saveWorkspace();
+      renderSidebar();
+      renderActiveNotebook();
+      showToast('Cell removed', 'info');
+    }
+
+    // --- Notebook Level CRUD ---
+    function createNewNotebook() {
+      const newNb = {
+        id: 'nb-' + Date.now(),
+        title: '⚡ Untitled Automation Notebook',
+        description: 'Custom polyglot notebook for scripts, API benchmarks, and documentation.',
+        updatedAt: getFormattedTimestamp(),
+        tags: ['custom', 'automation'],
+        cells: [
+          {
+            id: 'cell-' + Date.now() + '-1',
+            type: 'markdown',
+            mode: 'preview',
+            title: 'Notebook Overview',
+            content: `# ⚡ Untitled Automation Notebook\n\nClick **Edit Markdown** or add executable JS & Python blueprint cells below.`
+          },
+          {
+            id: 'cell-' + Date.now() + '-2',
+            type: 'js',
+            title: 'Quick Sandbox Verification',
+            code: `console.log("New notebook initialized!");\nreturn 200;`
+          }
+        ]
+      };
+      notebooks.unshift(newNb);
+      activeNotebookId = newNb.id;
+      saveWorkspace();
+      renderSidebar();
+      renderActiveNotebook();
+      promptRenameNotebook();
+    }
+
+    function duplicateCurrentNotebook() {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+      const copy = JSON.parse(JSON.stringify(nb));
+      copy.id = 'nb-' + Date.now();
+      copy.title = nb.title + ' (Copy)';
+      copy.updatedAt = getFormattedTimestamp();
+      copy.cells.forEach(c => {
+        c.id = 'cell-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+      });
+      notebooks.unshift(copy);
+      activeNotebookId = copy.id;
+      saveWorkspace();
+      renderSidebar();
+      renderActiveNotebook();
+      showToast(`Duplicated "${nb.title}"`, 'success');
+    }
+
+    function requestDeleteCurrentNotebook() {
+      if (notebooks.length <= 1) {
+        showToast('Cannot delete the only remaining notebook in the workspace', 'error');
+        return;
+      }
+      const nb = getActiveNotebook();
+      openConfirmModal(
+        'Delete Notebook?',
+        `Are you sure you want to delete "${nb.title}" and its ${nb.cells.length} cells? This action can be undone by resetting defaults if it is a starter notebook.`,
+        () => {
+          notebooks = notebooks.filter(n => n.id !== nb.id);
+          activeNotebookId = notebooks[0].id;
+          saveWorkspace();
+          renderSidebar();
+          renderActiveNotebook();
+          showToast('Notebook deleted', 'info');
+        }
+      );
+    }
+
+    function promptRenameNotebook() {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+      document.getElementById('modal-nb-title').value = nb.title || '';
+      document.getElementById('modal-nb-desc').value = nb.description || '';
+      document.getElementById('modal-nb-tags').value = (nb.tags || []).join(', ');
+      document.getElementById('rename-modal').classList.remove('hidden');
+    }
+
+    function closeRenameModal() {
+      document.getElementById('rename-modal').classList.add('hidden');
+    }
+
+    function saveNotebookMetadata() {
+      const nb = getActiveNotebook();
+      if (!nb) return;
+      const newTitle = document.getElementById('modal-nb-title').value.trim();
+      const newDesc = document.getElementById('modal-nb-desc').value.trim();
+      const newTags = document.getElementById('modal-nb-tags').value
+        .split(',')
+        .map(t => t.trim().toLowerCase().replace(/^#/, ''))
+        .filter(Boolean);
+
+      if (newTitle) nb.title = newTitle;
+      nb.description = newDesc;
+      nb.tags = newTags.length > 0 ? newTags : ['notebook'];
+      nb.updatedAt = getFormattedTimestamp();
+
+      saveWorkspace();
+      renderSidebar();
+      renderActiveNotebook();
+      closeRenameModal();
+      showToast('Notebook metadata updated', 'success');
+    }
+
+    // ============================================================================
+    // 9. CLIPBOARD, FILE DOWNLOAD & EXPORT / IMPORT SUITE (.ipynb, .md, .json)
+    // ============================================================================
+    function copyTextToClipboard(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Copied to clipboard!', 'success');
+      } catch (err) {
+        showToast('Copy failed', 'error');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function copyCellContent(cellId) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (!cell) return;
+      copyTextToClipboard(cell.code || cell.content || '');
+    }
+
+    function downloadBlueprintFile(cellId) {
+      const nb = getActiveNotebook();
+      const cell = nb?.cells.find(c => c.id === cellId);
+      if (!cell) return;
+      const filename = (cell.filename || 'automation_script.py').trim();
+      triggerFileDownload(filename, cell.code || '', 'text/plain;charset=utf-8');
+      showToast(`Downloaded ${filename}`, 'success');
+    }
+
+    function triggerFileDownload(filename, content, mimeType = 'application/json') {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function toggleExportMenu() {
+      const menu = document.getElementById('export-menu');
+      menu.classList.toggle('hidden');
+    }
+
+    function slugify(text) {
+      return (text || 'notebook')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'notebook';
+    }
+
+    function exportCurrentNotebook(format) {
+      document.getElementById('export-menu').classList.add('hidden');
+      const nb = getActiveNotebook();
+      if (!nb) return;
+      const slug = slugify(nb.title);
+
+      if (format === 'ipynb') {
+        const ipynb = {
+          nbformat: 4,
+          nbformat_minor: 5,
+          metadata: {
+            kernelspec: { display_name: "Python 3 / Polyglot Studio", language: "python", name: "python3" },
+            studio_metadata: { id: nb.id, title: nb.title, description: nb.description, tags: nb.tags }
+          },
+          cells: nb.cells.map(c => {
+            if (c.type === 'markdown' || c.type === 'widget') {
+              const mdText = c.type === 'markdown'
+                ? (c.content || '')
+                : `### Interactive Studio Widget: ${c.title || c.widgetType}`;
+              return {
+                cell_type: 'markdown',
+                metadata: { title: c.title },
+                source: mdText.split('\n').map((line, i, arr) => i < arr.length - 1 ? line + '\n' : line)
+              };
+            } else {
+              const codeText = c.code || '';
+              return {
+                cell_type: 'code',
+                execution_count: 1,
+                metadata: { title: c.title, filename: c.filename || '', cell_studio_type: c.type },
+                outputs: c.simulatedOutput ? [{
+                  output_type: 'stream',
+                  name: 'stdout',
+                  text: c.simulatedOutput.split('\n').map(l => l + '\n')
+                }] : [],
+                source: codeText.split('\n').map((line, i, arr) => i < arr.length - 1 ? line + '\n' : line)
+              };
+            }
+          })
+        };
+        triggerFileDownload(`${slug}.ipynb`, JSON.stringify(ipynb, null, 2), 'application/x-ipynb+json');
+        showToast(`Exported ${slug}.ipynb (Jupyter v4 format)`, 'success');
+      }
+
+      else if (format === 'md') {
+        const lines = [
+          `# ${nb.title}`,
+          `> ${nb.description || ''}`,
+          `> **Tags:** ${(nb.tags || []).map(t => '#' + t).join(' ')} | **Exported:** ${new Date().toISOString()}`,
+          ''
+        ];
+        nb.cells.forEach((c, i) => {
+          lines.push(`---`, `### [${i + 1}] ${c.title || c.type.toUpperCase()}`, '');
+          if (c.type === 'markdown') {
+            lines.push(c.content || '', '');
+          } else if (c.type === 'js') {
+            lines.push('```javascript', c.code || '', '```', '');
+          } else if (c.type === 'blueprint') {
+            const lang = (c.filename || '').endsWith('.js') ? 'javascript' : 'python';
+            lines.push(`**File:** \`${c.filename || 'script.py'}\``, '', `\`\`\`${lang}`, c.code || '', '```', '');
+            if (c.simulatedOutput) {
+              lines.push('**Simulated Output:**', '```text', c.simulatedOutput, '```', '');
+            }
+          }
+        });
+        triggerFileDownload(`${slug}.md`, lines.join('\n'), 'text/markdown;charset=utf-8');
+        showToast(`Exported ${slug}.md`, 'success');
+      }
+
+      else if (format === 'json') {
+        triggerFileDownload(`${slug}.studio.json`, JSON.stringify(nb, null, 2), 'application/json');
+        showToast(`Exported ${slug}.studio.json`, 'success');
+      }
+    }
+
+    function exportAllWorkspaceJSON() {
+      document.getElementById('export-menu').classList.add('hidden');
+      triggerFileDownload('automation_studio_workspace.json', JSON.stringify(notebooks, null, 2), 'application/json');
+      showToast('Exported complete workspace JSON backup', 'success');
+    }
+
+    // --- Import Suite (.ipynb and .json) ---
+    function openImportModal() {
+      document.getElementById('import-json-textarea').value = '';
+      document.getElementById('import-modal').classList.remove('hidden');
+    }
+
+    function closeImportModal() {
+      document.getElementById('import-modal').classList.add('hidden');
+    }
+
+    function handleImportFileUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result;
+        if (typeof content === 'string') {
+          processImportedJsonString(content, file.name);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function importFromTextarea() {
+      const raw = document.getElementById('import-json-textarea').value.trim();
+      if (!raw) {
+        showToast('Please select a file or paste valid JSON first', 'error');
+        return;
+      }
+      processImportedJsonString(raw, 'Imported Notebook');
+    }
+
+    function processImportedJsonString(rawString, fallbackName) {
+      try {
+        const parsed = JSON.parse(rawString);
+
+        // Case 1: Array of Studio Notebooks (Full Workspace backup)
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].cells) {
+          notebooks = [...parsed, ...notebooks];
+          activeNotebookId = parsed[0].id;
+          saveWorkspace();
+          renderSidebar();
+          renderActiveNotebook();
+          closeImportModal();
+          showToast(`Imported ${parsed.length} notebooks into workspace`, 'success');
+          return;
+        }
+
+        // Case 2: Standard Jupyter Notebook (.ipynb)
+        if (Array.isArray(parsed.cells) && parsed.nbformat) {
+          const studioMeta = parsed.metadata?.studio_metadata || {};
+          const importedNb = {
+            id: 'nb-' + Date.now(),
+            title: studioMeta.title || fallbackName.replace(/\.(ipynb|json)$/i, ''),
+            description: studioMeta.description || 'Imported Jupyter Notebook (.ipynb)',
+            updatedAt: getFormattedTimestamp(),
+            tags: studioMeta.tags || ['imported', 'jupyter'],
+            cells: parsed.cells.map((jc, i) => {
+              const src = Array.isArray(jc.source) ? jc.source.join('') : String(jc.source || '');
+              if (jc.cell_type === 'markdown') {
+                return {
+                  id: `cell-${Date.now()}-${i}`,
+                  type: 'markdown',
+                  mode: 'preview',
+                  title: jc.metadata?.title || `Markdown Note #${i + 1}`,
+                  content: src
+                };
+              } else {
+                const isJs = jc.metadata?.cell_studio_type === 'js';
+                return {
+                  id: `cell-${Date.now()}-${i}`,
+                  type: isJs ? 'js' : 'blueprint',
+                  filename: jc.metadata?.filename || `cell_${i + 1}.py`,
+                  title: jc.metadata?.title || `Code Cell #${i + 1}`,
+                  code: src
+                };
+              }
+            })
+          };
+          notebooks.unshift(importedNb);
+          activeNotebookId = importedNb.id;
+          saveWorkspace();
+          renderSidebar();
+          renderActiveNotebook();
+          closeImportModal();
+          showToast(`Imported Jupyter Notebook "${importedNb.title}"`, 'success');
+          return;
+        }
+
+        // Case 3: Single Studio Notebook JSON
+        if (parsed.title && Array.isArray(parsed.cells)) {
+          parsed.id = 'nb-' + Date.now();
+          notebooks.unshift(parsed);
+          activeNotebookId = parsed.id;
+          saveWorkspace();
+          renderSidebar();
+          renderActiveNotebook();
+          closeImportModal();
+          showToast(`Imported notebook "${parsed.title}"`, 'success');
+          return;
+        }
+
+        showToast('Unrecognized JSON schema. Expected .ipynb or Studio JSON.', 'error');
+      } catch (err) {
+        showToast('Invalid JSON file: ' + err.message, 'error');
+      }
+    }
+
+    // ============================================================================
+    // 10. LIGHTWEIGHT MARKDOWN PARSER & UI HELPERS
+    // ============================================================================
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function parseMarkdownToHtml(md) {
+      if (!md) return '';
+      let html = escapeHtml(md);
+
+      // Fenced code blocks ```lang ... ```
+      html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+        return `<pre><code>${code.trim()}</code></pre>`;
+      });
+
+      // Tables
+      html = html.replace(/^\|(.+)\|\n\|([-:\s|]+)\|\n((?:\|.*\|\n?)+)/gm, (_, headerRow, sepRow, bodyRows) => {
+        const headers = headerRow.split('|').map(s => s.trim()).filter(Boolean);
+        const rows = bodyRows.trim().split('\n').map(r => r.split('|').map(s => s.trim()).filter(Boolean));
+        return `
+          <table>
+            <thead><tr>${headers.map(h => `<th>${formatInlineMd(h)}</th>`).join('')}</tr></thead>
+            <tbody>
+              ${rows.map(r => `<tr>${r.map(c => `<td>${formatInlineMd(c)}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+        `;
+      });
+
+      const lines = html.split('\n');
+      const out = [];
+      let inList = false;
+
+      for (let line of lines) {
+        if (line.startsWith('# ')) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          out.push(`<h1>${formatInlineMd(line.slice(2))}</h1>`);
+        } else if (line.startsWith('## ')) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          out.push(`<h2>${formatInlineMd(line.slice(3))}</h2>`);
+        } else if (line.startsWith('### ')) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          out.push(`<h3>${formatInlineMd(line.slice(4))}</h3>`);
+        } else if (line.startsWith('&gt; ')) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          out.push(`<blockquote>${formatInlineMd(line.slice(5))}</blockquote>`);
+        } else if (/^(\*|-)\s+/.test(line)) {
+          if (!inList) { out.push('<ul>'); inList = true; }
+          out.push(`<li>${formatInlineMd(line.replace(/^(\*|-)\s+/, ''))}</li>`);
+        } else if (/^\d+\.\s+/.test(line)) {
+          if (!inList) { out.push('<ul>'); inList = true; }
+          out.push(`<li>${formatInlineMd(line.replace(/^\d+\.\s+/, ''))}</li>`);
+        } else if (line.trim() === '---') {
+          if (inList) { out.push('</ul>'); inList = false; }
+          out.push('<hr class="border-studio-border my-3" />');
+        } else if (line.trim() === '') {
+          if (inList) { out.push('</ul>'); inList = false; }
+        } else if (line.startsWith('<pre>') || line.startsWith('<table') || line.startsWith('</')) {
+          out.push(line);
+        } else {
+          out.push(`<p>${formatInlineMd(line)}</p>`);
+        }
+      }
+      if (inList) out.push('</ul>');
+      return out.join('\n');
+    }
+
+    function formatInlineMd(text) {
+      return text
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    }
+
+    function getFormattedTimestamp() {
+      const now = new Date();
+      return now.toISOString().slice(0, 16).replace('T', ' ');
+    }
+
+    function toggleMobileSidebar() {
+      const sb = document.getElementById('sidebar');
+      const bd = document.getElementById('sidebar-backdrop');
+      sb.classList.toggle('-translate-x-full');
+      bd.classList.toggle('hidden');
+    }
+
+    function openConfirmModal(title, desc, onConfirm) {
+      document.getElementById('confirm-modal-title').textContent = title;
+      document.getElementById('confirm-modal-desc').textContent = desc;
+      confirmCallback = onConfirm;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      confirmCallback = null;
+    }
+
+    document.getElementById('confirm-modal-action-btn').addEventListener('click', () => {
+      if (typeof confirmCallback === 'function') confirmCallback();
+      closeConfirmModal();
+    });
+
+    function openResetConfirmModal() {
+      openConfirmModal(
+        'Restore Starter Notebooks?',
+        'This will reset your workspace to the 4 default Automation Scripts starter notebooks (Global Tech Pulse, GreenOps Carbon Router, TF2 Arbitrage Hub, and Scratchpad).',
+        () => {
+          localStorage.removeItem(STORAGE_KEY);
+          cellOutputs = {};
+          loadWorkspace();
+          renderSidebar();
+          renderActiveNotebook();
+          showToast('Restored default starter notebooks', 'success');
+        }
+      );
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const palette = {
+        success: 'border-emerald-500/40 bg-studio-panel text-emerald-300',
+        error:   'border-rose-500/40 bg-studio-panel text-rose-300',
+        info:    'border-sky-500/40 bg-studio-panel text-sky-300'
+      }[type] || 'border-studio-border bg-studio-panel text-slate-200';
+
+      const icon = {
+        success: 'fa-circle-check text-emerald-400',
+        error:   'fa-triangle-exclamation text-rose-400',
+        info:    'fa-circle-info text-sky-400'
+      }[type] || 'fa-bell';
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border shadow-xl text-xs font-medium transition-all duration-200 ${palette}`;
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        setTimeout(() => toast.remove(), 220);
+      }, 2800);
+    }
+
+    // Close export dropdown on outside click & global `/` shortcut for search
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('export-dropdown-wrapper');
+      const menu = document.getElementById('export-menu');
+      if (wrapper && menu && !wrapper.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (e.key === '/' && activeTag !== 'input' && activeTag !== 'textarea') {
+        e.preventDefault();
+        document.getElementById('global-search-input')?.focus();
+      } else if (e.key === 'Escape') {
+        clearGlobalSearch();
+        closeRenameModal();
+        closeImportModal();
+        closeConfirmModal();
+      }
+    });
+
+    // Boot Studio
+    window.onload = function () {
+      loadWorkspace();
+      renderSidebar();
+      renderActiveNotebook();
+    };
+  </script>
+</body>
+</html>
